@@ -1,0 +1,17 @@
+
+<li>
+    {% include "snippets/search_form.html" with q=q%}
+    <hr/>
+</li>
+<li {% if active == 'archive' %}class="active"{% endif %}>
+    <a href="{% url 'archive:home' %}">Archive</a>
+</li>
+<li {% if active == 'storage' %}class="active"{% endif %}>
+    <a href="{% url 'storage:home' %}">Storage</a>
+</li>
+<li {% if active == 'users' %}class="active"{% endif %}>
+    <a href="{% url 'users:home' %}">Users</a>
+</li>
+<li {% if active == 'activity' %}class="active"{% endif %}>
+    <a href="{% url 'activity:home' %}">Activity</a>
+</li>

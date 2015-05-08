@@ -1,0 +1,9 @@
+<form  style="margin-left: 4px;margin-right: 4px;" action="{% url 'archive:search' %}">
+    <div class="input-group {% if size == 'full' %}input-group-lg{% endif %}">
+        <input name="q" type="text" placeholder="Search for..." value="{{q}}"
+        class="form-control {% if size == 'full' %}input-lg{% endif %}">
+        <span class="input-group-btn">
+            <button class="btn btn-default" type="button">Go!</button>
+        </span>
+    </div>
+</form>

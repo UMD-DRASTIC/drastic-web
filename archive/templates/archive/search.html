@@ -1,0 +1,9 @@
+{% extends "archive/base.html" %}
+
+{% block title %}Archive Search{% endblock title %}
+
+{% block main_content %}
+    {% include "snippets/search_form.html" with q=q size="full"%}
+{% endblock main_content %}
+
+

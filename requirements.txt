@@ -1,0 +1,8 @@
+Django==1.8
+Werkzeug==0.10.4
+cassandra-driver==2.5.0
+-e git://github.com/django-admin-bootstrapped/django-admin-bootstrapped.git@a6ca6e1633784c6c470c5a1be33582773f26f8ea#egg=django_admin_bootstrapped-2.5.0
+django-cassandra-engine==0.3.1
+django-extensions==1.5.3
+django-registration-redux==1.1
+
