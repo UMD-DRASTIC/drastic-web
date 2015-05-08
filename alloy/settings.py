@@ -43,11 +43,11 @@ INSTALLED_APPS = (
     'django.contrib.messages',
 
     'django_extensions',
-    'registration',
 
     'alloy',
     'archive',
     'activity',
+    'cauth',
     'storage',
     'users'
 )
