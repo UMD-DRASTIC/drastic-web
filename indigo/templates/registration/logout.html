@@ -4,7 +4,18 @@
 {% block title %}Logged out{% endblock %}
 
 {% block content %}
-  <h2>Logged out</h2>
-  <p>You have been logged out.</p>
+    <div class="jumbotron"  style="margin-top: 80px;">
+      <h2>Logged out</h2>
+      <p>You have been logged out and will be redirected to the homepage in 10 seconds</p>
+
+      <p>
+        <a class="btn btn-primary" href="/">Go to the homepage</a>
+        <a class="btn btn-success" href="{% url 'auth_login' %}">Login again</a>
+      </p>
+    </div>
 {% endblock %}
 
+
+{% block extra_header %}
+    <meta http-equiv="refresh" content="10; url=/" />
+{% endblock extra_header %}

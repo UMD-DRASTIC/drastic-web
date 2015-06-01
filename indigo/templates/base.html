@@ -1,4 +1,5 @@
 {% load ui_tags %}
+{% load gravatar %}
 {% load staticfiles %}
 
 <!DOCTYPE html>
@@ -47,9 +48,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="/">
-            <img src="/static/img/logo_80.png"/>
-          </a>
+
         </div>
 
         {% url 'home' as home %}
@@ -74,19 +73,23 @@
               {% if not user.is_authenticated %}
                   <li><a href="/accounts/login">Login</a></li>
               {% else %}
+
                 <li class="dropdown">
-                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Welcome, {{ user.get_full_name|default:user.username}}
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Welcome, {{ user.get_full_name|default:user.username}} <span class="pull-left" style="margin-top:-10px;margin-right: 8px;">{% gravatar user.email 40 %}</span>
  <span class="caret"></span></a>
-                  <ul class="dropdown-menu" role="menu">
+                   <ul class="dropdown-menu" role="menu">
                     {% if user.is_staff %}
-                    <li><a href="/admin">Admin</a></li>
-                    <li class="divider"></li>
+                      <li><a href="/admin">Admin</a></li>
+                      <li class="divider"></li>
                     {% endif %}
-                    <li><a href="#">Action</a></li>
-                    <li><a href="#">Another action</a></li>
-                    <li><a href="#">Something else here</a></li>
-                    <li class="divider"></li>
-                    <li><a href="#">Separated link</a></li>
+                    <li><a href="{% url 'archive:home' %}">Archive</a></li>
+
+                    <!-- TODO: If user has permission -->
+                    <li><a href="{% url 'storage:home' %}">Storage</a></li>
+
+                    <!-- TODO: If user is logged in -->
+                    <li><a href="{% url 'users:home' %}">Users</a></li>
+                    <li><a href="{% url 'activity:home' %}">Activity</a></li>
                     <li class="divider"></li>
                     <li><a href="{% url 'auth_logout' %}">Logout</a></li>
                   </ul>
@@ -109,14 +112,24 @@
     {% endif %}
 
       {% block content %}
+
+      {% if user.is_authenticated %}
         <div class="row">
           <div class="col-sm-3 col-md-2 sidebar">
+          <center>
+            <a href="/">
+              <img src="{% static 'img/indigo.png' %}" border="0"/>
+            </a>
+          </center>
           <ul class="nav nav-sidebar">
-          {% block sidebar %}
-          {% endblock sidebar %}
+            {% block sidebar %}
+            {% endblock sidebar %}
           </ul>
         </div>
         <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+        {% else %}
+        <div class="col-sm-12 col-md-12  main">
+        {% endif %}
 
           {% block main_content %}
           {% endblock main_content %}
