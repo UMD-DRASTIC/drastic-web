@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Activation complete{% endblock title %}
+
+{% block content %}
+
+<div class="container">
+    <h2>Activation complete</h2>
+
+    <p>Now that your account is activated, you have been automatically logged in to the system.</p>
+
+    <p>You will automatically be redirected to the home page in 10 seconds, or you can <a href="/">go straight there</a></p>
+</div>
+{% endblock %}
+
+{% block extra_header %}
+    <meta http-equiv="refresh" content="10; url=/" />
+{% endblock extra_header %}

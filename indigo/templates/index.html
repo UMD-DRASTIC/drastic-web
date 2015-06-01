@@ -3,5 +3,11 @@
 {% block title %}Home{% endblock title %}
 
 {% block content %}
-main
+
+
+<div class="jumbotron">
+<a class="btn btn-primary" href="{% url 'registration_register' %}">Register</a>
+    <a class="btn btn-success" href="{% url 'auth_login' %}">Login</a>
+</div>
+
 {% endblock content %}

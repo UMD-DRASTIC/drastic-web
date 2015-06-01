@@ -12,17 +12,12 @@ urlpatterns = [
     url(r'^users/', include('users.urls', namespace="users")),
     url(r'^activity/', include('activity.urls', namespace="activity")),
 
-    url(r'^login$', 'indigo.views.login_view', name='login'),
-    url(r'^logout$', 'indigo.views.logout_view', name='logout'),
-
     url(r'^about$', TemplateView.as_view(template_name='about.html'), name='about'),
     url(r'^contact$', TemplateView.as_view(template_name='contact.html'), name='contact'),
 
-    url(r'^accounts/', include('cauth.urls')),
+    url(r'^accounts/', include('registration.backends.default.urls')),
 
     url(r'^admin/', include(admin.site.urls)),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
-#if settings.DEBUG:
-    #
-    #urlpatterns = urlpatterns +
+admin.site.site_header = 'Indigo Administration'

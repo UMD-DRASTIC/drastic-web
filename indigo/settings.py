@@ -23,29 +23,25 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = (
-    'django_cassandra_engine',
-
-    'django_admin_bootstrapped',
-    'django.contrib.staticfiles',
-
+    'flat',
     'django.contrib.admin',
+    'django.contrib.sites',
+    'django.contrib.staticfiles',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-
     'django_extensions',
-
+    'rest_framework',
+    'registration',
     'indigo',
     'archive',
     'activity',
-    'cauth',
-
     'storage',
     'users'
 )
 
-AUTHENTICATION_BACKENDS = ("cauth.backend.CassandraBackend",)
+SITE_ID = 1
 
 # Registration config
 ACCOUNT_ACTIVATION_DAYS = 7
@@ -88,18 +84,17 @@ DATABASES = {
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     },
     'default': {
-        'ENGINE': 'django_cassandra_engine',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'indigo',
-        'TEST_NAME': 'indigo_test_',
         'HOST': '127.0.0.1',
-        'OPTIONS': {
-            'replication': {
-                'strategy_class': 'SimpleStrategy',
-                'replication_factor': 1
-            }
-        }
-    }
+        'USER': 'indigo',
+        'PASS': 'indigo'
+    },
 }
+
+LOGIN_REDIRECT_URL = '/'
+INCLUDE_AUTH_URLS = True
+INCLUDE_REGISTER_URL = True
 
 LANGUAGE_CODE = 'en-gb'
 TIME_ZONE = 'UTC'
@@ -108,3 +103,9 @@ USE_L10N = True
 USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+# Try and load a local, machine specific settings if it exists.
+try:
+    from local_settings import *
+except:
+    pass

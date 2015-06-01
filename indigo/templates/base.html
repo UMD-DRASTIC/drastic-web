@@ -23,6 +23,7 @@
     <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
     <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
     <script src='{% static "js/ie-emulation-modes-warning.js"%}'></script>
+    <script src='{% static "js/jquery.min.js"%}'></script>
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -71,20 +72,23 @@
           </ul>
           <ul class="nav navbar-nav navbar-right">
               {% if not user.is_authenticated %}
-                  <li><a href="/accounts/login">Login</a>
-                  </li>
+                  <li><a href="/accounts/login">Login</a></li>
               {% else %}
                 <li class="dropdown">
-                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Welcome, {{ user.get_full_name }}
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Welcome, {{ user.get_full_name|default:user.username}}
  <span class="caret"></span></a>
                   <ul class="dropdown-menu" role="menu">
+                    {% if user.is_staff %}
+                    <li><a href="/admin">Admin</a></li>
+                    <li class="divider"></li>
+                    {% endif %}
                     <li><a href="#">Action</a></li>
                     <li><a href="#">Another action</a></li>
                     <li><a href="#">Something else here</a></li>
                     <li class="divider"></li>
                     <li><a href="#">Separated link</a></li>
                     <li class="divider"></li>
-                    <li><a href="{% url 'logout' %}">Logout</a></li>
+                    <li><a href="{% url 'auth_logout' %}">Logout</a></li>
                   </ul>
                 </li>
                 {% endif %}
