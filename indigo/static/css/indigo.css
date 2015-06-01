@@ -1,0 +1,12 @@
+
+.user-tab {
+    margin: 0px;
+    margin-bottom: 10px;
+    background-color: #7BAEC7;
+    color: white;
+    border-radius: 4px;
+}
+
+.user-tab a {
+    color: white;
+}

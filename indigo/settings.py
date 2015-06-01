@@ -34,6 +34,9 @@ INSTALLED_APPS = (
     'django_extensions',
     'rest_framework',
     'registration',
+    'django_gravatar',
+
+
     'indigo',
     'archive',
     'activity',
@@ -46,6 +49,7 @@ SITE_ID = 1
 # Registration config
 ACCOUNT_ACTIVATION_DAYS = 7
 REGISTRATION_AUTO_LOGIN = True
+GRAVATAR_DEFAULT_IMAGE = "identicon"
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
