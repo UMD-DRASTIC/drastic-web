@@ -18,3 +18,7 @@
 ul.nav-sidebar {
     margin-top: 60px;
 }
+
+.error {
+    color: red;
+}

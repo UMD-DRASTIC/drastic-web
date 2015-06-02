@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Storage{% endblock title %}
+{% block title %}New Storage{% endblock title %}
 
 {% block sidebar %}
     {% include "snippets/sidenav.html" with active="storage" %}
@@ -8,8 +8,8 @@
 
 
 {% block main_content %}
-    <h2>Storage
-        <a href="{% url 'storage:new' %}" class="pull-right btn btn-success">Add Storage</a>
+    <h2>Modify ''
+        <a href="{% url 'storage:home' %}" class="pull-right btn btn-default">Cancel</a>
     </h2>
     <hr/>
 

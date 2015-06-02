@@ -10,6 +10,26 @@
     </div>
 </h2>
 <hr/>
+{# This should be a permissions check, not a super-user check #}
+{% if user.is_superuser %}
+    <div class="control-bar">
+        <div class="col-md-offset-1 col-md-3">
+            <a href="{% url 'archive:new' %}">New Collection</a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'archive:new' %}">Edit Current Collection</a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'archive:new' %}">Delete Current Collection</a>
+        </div>
+
+        <div class="clearfix"></div>
+    </div>
+    <hr/>
+{% endif %}
+
+{% include "archive/snippets/collection.html" with collection=collection%}
+
 {% endblock main_content %}
 
 
