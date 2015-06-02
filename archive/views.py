@@ -40,6 +40,17 @@ def search(request):
     ctx = {
         "q": query
     }
+
+    ctx['results'] = {}
+    if query:
+        ctx['results']['collections'] = [
+            {"name": "something", "path": "data/something"},
+        ]
+        ctx['results']['resources'] = [
+            {"name": "A CSV file", "type": "CSV", "id": "Y"},
+            {"name": "An XML file", "type": "XML", "id": "Z"},
+        ]
+
     return render(request, 'archive/search.html', ctx)
 
 @login_required

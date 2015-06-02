@@ -8,6 +8,18 @@
 <hr/>
 {% include "snippets/search_form.html" with q=q size="full"%}
 
+<hr/>
+
+{% for c in results.collections%}
+    {% include "archive/snippets/collection_entry.html" with collection=c %}
+{% endfor %}
+
+
+{% for r in results.resources %}
+    {% include "archive/snippets/resource_entry.html" with resource=r %}
+{% endfor %}
+
+
 {% endblock main_content %}
 
 

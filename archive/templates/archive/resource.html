@@ -11,25 +11,21 @@
 </h2>
 <hr/>
 
-{# This should be a permissions check, not a super-user check
+{# Permission check for action bar .... #}
+
 {% if user.is_superuser %}
     <div class="control-bar">
-        <div class="col-md-offset-1 col-md-3">
-            <a href="{% url 'archive:new' %}">New Collection</a>
+        <div class="col-md-offset-2 col-md-4">
+            <a href="">Edit Resource</a>
         </div>
-        <div class="col-md-3">
-            <a href="{% url 'archive:new' %}">Edit Current Collection</a>
-        </div>
-        <div class="col-md-3">
-            <a href="{% url 'archive:new' %}">Delete Current Collection</a>
+        <div class="col-md-4">
+            <a href="">Delete Resource</a>
         </div>
 
         <div class="clearfix"></div>
     </div>
     <hr/>
 {% endif %}
-
-#}
 
 
 
