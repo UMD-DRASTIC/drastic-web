@@ -1,0 +1,20 @@
+
+<ol class="breadcrumb">
+  <li><a href="{% url 'archive:view' path="" %}">Home</a></li>
+  {% for coll in collection.collection_paths %}
+    {% if forloop.last %}
+        <li class="active">{{coll}}</li>
+    {% else %}
+        <li><a href="{% url 'archive:view' path=coll %}">{{coll}}</a></li>
+    {% endif %}
+  {% endfor %}
+</ol>
+
+{% for c in collection.collections%}
+    {% include "archive/snippets/collection_entry.html" with collection=c %}
+{% endfor %}
+
+
+{% for r in collection.resources %}
+    {% include "archive/snippets/resource_entry.html" with resource=r %}
+{% endfor %}

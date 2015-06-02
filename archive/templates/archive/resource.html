@@ -1,0 +1,38 @@
+{% extends "archive/base.html" %}
+
+{% block title %}Resource - {{resource.name}}{% endblock title %}
+
+{% block main_content %}
+
+<h2>Resource - {{resource.name}}
+<a class="pull-right btn btn-success" href="{% url 'archive:view' path=resource.collection.name%}">
+&laquo; Back to {{ resource.collection.name }} collection
+</a>
+</h2>
+<hr/>
+
+{# This should be a permissions check, not a super-user check
+{% if user.is_superuser %}
+    <div class="control-bar">
+        <div class="col-md-offset-1 col-md-3">
+            <a href="{% url 'archive:new' %}">New Collection</a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'archive:new' %}">Edit Current Collection</a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'archive:new' %}">Delete Current Collection</a>
+        </div>
+
+        <div class="clearfix"></div>
+    </div>
+    <hr/>
+{% endif %}
+
+#}
+
+
+
+{% endblock main_content %}
+
+
