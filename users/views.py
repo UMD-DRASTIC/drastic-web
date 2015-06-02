@@ -1,7 +1,9 @@
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.contrib.auth.decorators import login_required
 
+@login_required
 def home(request):
     user_objs = User.objects.order_by('username')
 
@@ -22,6 +24,7 @@ def home(request):
     }
     return render(request, 'users/index.html', ctx)
 
+@login_required
 def user_view(request, id):
     user_obj = get_object_or_404(User, username=id)
 

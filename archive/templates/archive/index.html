@@ -3,7 +3,13 @@
 {% block title %}Archive{% endblock title %}
 
 {% block main_content %}
-    {% include "snippets/search_form.html" with q=q size="full"%}
+
+<h2>Collections
+    <div class="pull-right" style="width:400px;">
+    {% include "snippets/search_form.html" with q=q size="small"%}
+    </div>
+</h2>
+<hr/>
 {% endblock main_content %}
 
 

@@ -10,6 +10,7 @@
 
 {% block main_content %}
     <h2>Users ({{ user_count }})</h2>
+    <hr/>
 
     {% for user in users %}
         {% include "users/usertab.html" with user=user%}

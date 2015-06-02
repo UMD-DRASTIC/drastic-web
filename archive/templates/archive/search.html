@@ -3,7 +3,11 @@
 {% block title %}Archive Search{% endblock title %}
 
 {% block main_content %}
-    {% include "snippets/search_form.html" with q=q size="full"%}
+
+<h2>Search {% if q %}for '{{q}}'{% endif %}</h2>
+<hr/>
+{% include "snippets/search_form.html" with q=q size="full"%}
+
 {% endblock main_content %}
 
 
