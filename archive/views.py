@@ -1,5 +1,9 @@
+import os
+
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+
+from archive.client import get_default_client
 
 def home(request):
     return redirect('archive:view', path='')
@@ -10,26 +14,44 @@ def resource_view(request, id):
 
 def navigate(request, path):
 
-    parts = path.split('/')
+    client     = get_default_client()
+    collection = client.get_collection(path if path.startswith("/") else "/{}".format(path))
+
+    collections = []
+    resources   = []
+
+    for child in collection.get("children"):
+        if child.endswith("/"):
+            collections.append(child)
+        else:
+            resources.append(child)
+
+    collections.sort()
+    resources.sort()
+
+    parts = path.split("/")
+
+    def make_collection_dict(c):
+        return {
+            "name": c,
+            "path": "{}{}".format(path, c)
+        }
+
+    def make_resource_dict(r):
+        name, ext = os.path.splitext(r)
+        print ext
+        return {
+            "name": r,
+            "type": ext[1:].upper()
+        }
 
     ctx = {
         'collection': {
-            'collection_paths': parts,
-            'collections': [],
+            'collection_paths': path.split('/'),
+            'collections': [make_collection_dict(c) for c in collections],
+            'resources': [make_resource_dict(r) for r in resources],
         }
     }
-
-    if not ctx['collection']['collections']:
-        ctx['collection']['collections'] = [
-            {"name": "data", "path": "data"},
-            {"name": "something", "path": "data/something"},
-            {"name": "something-else", "path": "data/something/something-else"},
-        ]
-        ctx['collection']['resources'] = [
-            {"name": "Some data file", "type": "XLS", "id": "X"},
-            {"name": "A CSV file", "type": "CSV", "id": "Y"},
-            {"name": "An XML file", "type": "XML", "id": "Z"},
-        ]
 
     return render(request, 'archive/index.html', ctx)
 

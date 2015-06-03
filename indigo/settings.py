@@ -80,6 +80,12 @@ TEMPLATES = [
     },
 ]
 
+CDMI_SERVER = {
+    "endpoint": "http://127.0.0.1:8001/cdmi",
+    "username": "",
+    "password": "",
+}
+
 WSGI_APPLICATION = 'indigo.wsgi.application'
 
 DATABASES = {
