@@ -5,7 +5,7 @@
 {% block main_content %}
 
 <h2>Resource - {{resource.name}}
-<a class="pull-right btn btn-success" href="{% url 'archive:view' path=resource.collection.name%}">
+<a class="pull-right btn" href="{% url 'archive:view' path=resource.parentURI %}">
 &laquo; Back to {{ resource.collection.name }} collection
 </a>
 </h2>
@@ -13,20 +13,66 @@
 
 {# Permission check for action bar .... #}
 
-{% if user.is_superuser %}
     <div class="control-bar">
+        {% if user.is_superuser %}
         <div class="col-md-offset-2 col-md-4">
             <a href="">Edit Resource</a>
         </div>
         <div class="col-md-4">
             <a href="">Delete Resource</a>
         </div>
+        {% endif %}
+        <a class="btn btn-success pull-right" href="">Download resource</a>
 
         <div class="clearfix"></div>
     </div>
-    <hr/>
-{% endif %}
 
+    <hr/>
+
+
+
+<div class="col-md-6">
+    <h4>Preview</h4>
+    <hr/>
+    <img src="http://placehold.it/420x560">
+</div>
+
+<div class="col-md-6">
+    <h4>Metadata</h4>
+    <hr/>
+    <table class="table table-">
+    <tbody>
+        <tr>
+            <th>Name</th>
+            <td>{{resource.name}}</td>
+        </tr>
+        <tr>
+            <th>Mimetype</th>
+            <td>{{resource.mimetype}}</td>
+        </tr>
+        <tr>
+            <th>Size (in bytes)</th>
+            <td>{{resource.metadata.cdmi_size}}</td>
+        </tr>
+        <tr>
+            <th>Collection</th>
+            <td>{{ resource.parentURI|default:"/" }}</td>
+        </tr>
+        <tr>
+            <th>Created date/time</th>
+            <td>{{resource.metadata.cdmi_ctime}}</td>
+        </tr>
+        <tr>
+            <th>Modified date/time</th>
+            <td>{{resource.metadata.cdmi_mtime}}</td>
+        </tr>
+        <tr>
+            <th>Last access date/time</th>
+            <td>{{resource.metadata.cdmi_atime}}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
 
 
 {% endblock main_content %}

@@ -7,6 +7,8 @@
 <div class="row">
   <br/><br/>
   <div class="col-md-4 col-md-offset-4 col-sm-4 col-sm-offset-4">
+
+  <center><h2>Login to Indigo</h2></center>
   <div class="well">
     <form id="loginForm" method="POST" action="." novalidate="novalidate">
       {% csrf_token %}
@@ -21,14 +23,13 @@
         <span class="help-block"></span>
       </div>
       <div id="loginErrorMsg" class="alert alert-error hide">Wrong username og password</div>
-      <div class="checkbox">
+
         <label>
-            <input type="checkbox" name="remember" id="remember"> Remember login
+            <input type="hidden" name="remember" id="remember" checked="checked">
         </label>
-        <p class="help-block">(if this is a private computer)</p>
-      </div>
+
       <button type="submit" class="btn btn-success btn-block">Login</button>
-      <a href="/forgot/" class="btn btn-default btn-block">Help to login</a>
+      <a href="/accounts/forgot/" class="btn btn-default btn-block">Forgotten password</a>
     </form>
   </div>
  </div>

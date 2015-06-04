@@ -8,9 +8,20 @@ from archive.client import get_default_client
 def home(request):
     return redirect('archive:view', path='')
 
-def resource_view(request, id):
+def resource_view(request, path):
     ctx = {"resource": {"id": id, "name": "A test name", "collection":{"name": "data"}}}
-    return render(request, 'archive/resource.html', ctx)
+
+    client     = get_default_client()
+    resource   = client.get_resource_info("/" + path)
+
+    # Strip the leading / from the parent url
+    if resource['parentURI'].startswith("/"):
+        resource['parentURI'] = resource['parentURI'][1:]
+    if resource['parentURI'] and not resource['parentURI'].endswith("/"):
+        resource['parentURI'] = resource['parentURI'] + "/"
+    resource['name'] = path.split('/')[-1]
+
+    return render(request, 'archive/resource.html', {"resource": resource})
 
 def navigate(request, path):
 
@@ -39,15 +50,16 @@ def navigate(request, path):
 
     def make_resource_dict(r):
         name, ext = os.path.splitext(r)
-        print ext
         return {
             "name": r,
-            "type": ext[1:].upper()
+            "type": ext[1:].upper(),
+            "path": "{}{}".format(path, r)
         }
+
 
     ctx = {
         'collection': {
-            'collection_paths': path.split('/'),
+            'collection_paths': [p for p in path.split('/') if p],
             'collections': [make_collection_dict(c) for c in collections],
             'resources': [make_resource_dict(r) for r in resources],
         }

@@ -18,3 +18,9 @@
 {% for r in collection.resources %}
     {% include "archive/snippets/resource_entry.html" with resource=r %}
 {% endfor %}
+
+{% if not collection.collections %}
+  {% if not collection.resources %}
+    <p>This collection is empty.</p>
+  {% endif %}
+{% endif %}

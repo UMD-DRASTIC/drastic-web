@@ -28,3 +28,8 @@ class Client(object):
 
     def delete_collection(self, full_path):
         return self.conn.container_proxy.delete(full_path)
+
+    def get_resource_info(self, full_path):
+        return self.conn.blob_proxy.read(full_path)
+
+
