@@ -22,7 +22,7 @@
             <a href="">Delete Resource</a>
         </div>
         {% endif %}
-        <a class="btn btn-success pull-right" href="">Download resource</a>
+        <a class="btn btn-success pull-right" href="{% url 'archive:download' path=resource.path %}">Download resource</a>
 
         <div class="clearfix"></div>
     </div>

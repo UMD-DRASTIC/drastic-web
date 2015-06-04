@@ -7,5 +7,5 @@ urlpatterns = [
     url(r'^resource/(?P<path>.*)$', 'archive.views.resource_view', name='resource_view'),
     url(r'^new$', 'archive.views.new', name='new'),
 
-    url(r'^/download/(?P<path>.*)$', 'archive.views.download', name='download'),
+    url(r'^download/(?P<path>.*)$', 'archive.views.download', name='download'),
 ]

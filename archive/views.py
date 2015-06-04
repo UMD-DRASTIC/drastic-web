@@ -23,7 +23,7 @@ def resource_view(request, path):
     if resource['parentURI'] and not resource['parentURI'].endswith("/"):
         resource['parentURI'] = resource['parentURI'] + "/"
     resource['name'] = path.split('/')[-1]
-
+    resource['path'] = path
     return render(request, 'archive/resource.html', {"resource": resource})
 
 def navigate(request, path):
@@ -94,11 +94,17 @@ def search(request):
 def new(request):
     return render(request, 'archive/index.html', {})
 
+@login_required
 def download(request, path):
     """
     Requests for download are redirected to the agent via the agent,
     but for debugging the requests are served directly.
+
+    We will send appropriate user auth to the agent.
     """
+
+    # Permission checks
+
     client     = get_default_client()
     resource   = client.get_resource_info("/" + path)
 
@@ -111,12 +117,14 @@ def download(request, path):
         yield client.get_resource_content("/" + path)
 
     if settings.DEBUG:
-
         resp = StreamingHttpResponse(streaming_content=get_content_debug(),
                                      content_type=resource.get('mimetype', 'application/octect-stream'))
         resp['Content-Disposition'] = 'attachment; filename="{}"'.format(path.split('/')[-1])
 
         return resp
+
+    # TODO: Set the response in such a way that nginx can correctly redirect to the agent to do
+    # the appropriate work of returning the file.
 
     return ""
 
