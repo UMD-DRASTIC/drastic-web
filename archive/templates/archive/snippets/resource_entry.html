@@ -6,6 +6,11 @@
     <i class="label label-info">{{resource.type}}</i>&nbsp;
     {{ resource.name }}
   </a>
+
+  <a class="pull-right" href="{% url 'archive:download' path=resource.path%}" >
+  Download  <i class="glyphicon glyphicon-download-alt"></i>
+  </a>
+
 </div>
 <hr/>
 

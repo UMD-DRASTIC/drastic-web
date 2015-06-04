@@ -1,5 +1,8 @@
 import os
+import requests
 
+from django.conf import settings
+from django.http import StreamingHttpResponse, HttpResponse
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 
@@ -90,3 +93,31 @@ def search(request):
 @login_required
 def new(request):
     return render(request, 'archive/index.html', {})
+
+def download(request, path):
+    """
+    Requests for download are redirected to the agent via the agent,
+    but for debugging the requests are served directly.
+    """
+    client     = get_default_client()
+    resource   = client.get_resource_info("/" + path)
+
+    # We have size and mimetype from the resource info, then we want to
+    # either:
+    #   - Redirect to the appropriate agent URL
+    #   - Stream the response ourselves, but only in debug
+
+    def get_content_debug():
+        yield client.get_resource_content("/" + path)
+
+    if settings.DEBUG:
+        # u'mimetype': u'text': u'/sample.csv', u'value': u'', u'valuerange': u'0--1', u'metadata': {u'cdmi_ctime': u'2015-06-03T14:06:33', u'cdmi_mtime': u'2015-06-03T14:06:33', u'cdmi_size': 0, u'cdmi_atime': u'2015-06-03T14:06:33'}}
+        resp = StreamingHttpResponse(streaming_content=get_content_debug(),
+                                     content_type=resource.get('mimetype', 'application/octect-stream'))
+        # Set disposition
+        return resp
+
+    return ""
+
+
+

@@ -32,4 +32,6 @@ class Client(object):
     def get_resource_info(self, full_path):
         return self.conn.blob_proxy.read(full_path)
 
+    def get_resource_content(self, full_path):
+        return self.conn.blob_proxy.read(full_path, cdmi_object=False)
 
