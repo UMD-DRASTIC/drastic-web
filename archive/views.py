@@ -111,10 +111,11 @@ def download(request, path):
         yield client.get_resource_content("/" + path)
 
     if settings.DEBUG:
-        # u'mimetype': u'text': u'/sample.csv', u'value': u'', u'valuerange': u'0--1', u'metadata': {u'cdmi_ctime': u'2015-06-03T14:06:33', u'cdmi_mtime': u'2015-06-03T14:06:33', u'cdmi_size': 0, u'cdmi_atime': u'2015-06-03T14:06:33'}}
+
         resp = StreamingHttpResponse(streaming_content=get_content_debug(),
                                      content_type=resource.get('mimetype', 'application/octect-stream'))
-        # Set disposition
+        resp['Content-Disposition'] = 'attachment; filename="{}"'.format(path.split('/')[-1])
+
         return resp
 
     return ""
