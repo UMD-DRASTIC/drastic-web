@@ -40,8 +40,9 @@ INSTALLED_APPS = (
     'indigo',
     'archive',
     'activity',
-    'storage',
-    'users'
+    'nodes',
+    'users',
+    'router'
 )
 
 SITE_ID = 1

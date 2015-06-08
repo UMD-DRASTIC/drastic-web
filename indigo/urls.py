@@ -8,7 +8,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     url(r'^$', 'indigo.views.home', name='home'),
     url(r'^archive/', include('archive.urls', namespace="archive")),
-    url(r'^storage/', include('storage.urls', namespace="storage")),
+    url(r'^node/', include('nodes.urls', namespace="nodes")),
     url(r'^users/', include('users.urls', namespace="users")),
     url(r'^activity/', include('activity.urls', namespace="activity")),
 
@@ -18,6 +18,9 @@ urlpatterns = [
     url(r'^accounts/forgot/', TemplateView.as_view(template_name="registration/forgotten_password.html"), name="forgot"),
     url(r'^accounts/', include('registration.backends.default.urls')),
 
+    # All routes from here are to be re-routed to the agent by using
+    # nginx to re-route calls as an internal redirect
+    url(r'^cdmi/', include('router.urls')),
 
     url(r'^admin/', include(admin.site.urls)),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

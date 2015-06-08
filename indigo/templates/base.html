@@ -25,6 +25,7 @@
     <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
     <script src='{% static "js/ie-emulation-modes-warning.js"%}'></script>
     <script src='{% static "js/jquery.min.js"%}'></script>
+    <script src='{% static "js/bootstrap.min.js"%}'></script>
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -85,7 +86,7 @@
                     <li><a href="{% url 'archive:home' %}">Archive</a></li>
 
                     <!-- TODO: If user has permission -->
-                    <li><a href="{% url 'storage:home' %}">Storage</a></li>
+                    <li><a href="{% url 'nodes:home' %}">Nodes</a></li>
 
                     <!-- TODO: If user is logged in -->
                     <li><a href="{% url 'users:home' %}">Users</a></li>
@@ -102,14 +103,6 @@
 
     <div class="container-fluid">
 
-    {% if messages %}
-      <ul class="list-unstyled messages">
-      {% for message in messages %}
-        {% get_bootstrap_alert_msg_css_name message.tags as alert_tag %}
-        <li class="alert alert-{{ alert_tag }}">{{ message }}</li>
-      {% endfor %}
-      </ul>
-    {% endif %}
 
       {% block content %}
 
@@ -131,6 +124,20 @@
         {% else %}
         <div class="col-sm-12 col-md-12  main">
         {% endif %}
+
+    {% if messages %}
+      <ul class="list-unstyled messages">
+      {% for message in messages %}
+        {% get_bootstrap_alert_msg_css_name message.tags as alert_tag %}
+        <li class="alert alert-{{ alert_tag }} alert-dismissible">
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">×</span>
+          </button>
+        {{ message }}</li>
+      {% endfor %}
+      </ul>
+    {% endif %}
+
 
           {% block main_content %}
           {% endblock main_content %}

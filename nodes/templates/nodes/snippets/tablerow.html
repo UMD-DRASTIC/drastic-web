@@ -1,0 +1,29 @@
+
+
+
+<tr class="{% if node.status == 'down' %}danger{% endif %}">
+    <td>
+        {{ node.name }}
+    </td>
+    <td>
+        {{ node.address }}
+    </td>
+    <td>
+       {{ node.last_contact|date:"d M H:m" }}
+    </td>
+    <td>
+       {% include "nodes/snippets/status.html" with status=node.status%}
+    </td>
+    <td>
+        ....
+    </td>
+    <td>
+        <span class="pull-right">
+            <a href="{% url 'nodes:check' id=node.id %}">View log</a>
+            &nbsp;
+            <a href="{% url 'nodes:check' id=node.id %}">Refresh</a>
+            &nbsp;
+            <a href="{% url 'nodes:edit' id=node.id %}">Edit</a>
+        </span>
+    </td>
+</tr>

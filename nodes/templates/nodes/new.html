@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}New Node{% endblock title %}
+
+{% block sidebar %}
+    {% include "snippets/sidenav.html" with active="nodes" %}
+{% endblock sidebar %}
+
+
+{% block main_content %}
+
+    <h2>Add New Node
+        <a href="{% url 'nodes:home' %}" class="pull-right btn btn-default">Cancel</a>
+    </h2>
+    <hr/>
+
+    {% include "nodes/snippets/form.html" with form=form%}
+
+{% endblock main_content %}

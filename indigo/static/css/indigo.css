@@ -1,4 +1,8 @@
 
+a:active, a:hover {
+    color: black !important;
+}
+
 .user-tab {
     margin: 0px;
     margin-bottom: 10px;
@@ -26,3 +30,14 @@ ul.nav-sidebar {
 .blue-icon {
     color: #468CC8;
 }
+
+.status-up {
+    color: green;
+}
+.status-unknown {
+    color: yellow;
+}
+.status-down {
+    color: red;
+}
+

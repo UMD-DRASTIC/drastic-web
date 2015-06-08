@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Nodes{% endblock title %}
+
+{% block sidebar %}
+    {% include "snippets/sidenav.html" with active="nodes" %}
+{% endblock sidebar %}
+
+
+{% block main_content %}
+
+<h2>Nodes
+    <a href="{% url 'nodes:new' %}" class="pull-right btn btn-success">Add Node</a>
+</h2>
+<hr/>
+
+<table class="table table-striped" style="table-layout:fixed;">
+    <thead>
+        <th>Name</th>
+        <th>Address</th>
+        <th>Last update</th>
+        <th>Status</th>
+        <th>Metrics</th>
+    </thead>
+    <tbody>
+        {% for n in nodes %}
+            {% include "nodes/snippets/tablerow.html" with node=n %}
+        {% endfor %}
+    </tbody>
+</table>
+
+
+
+{% endblock main_content %}

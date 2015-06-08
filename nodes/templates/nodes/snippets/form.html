@@ -1,0 +1,34 @@
+    {% if form.errors %}
+        <div class="alert alert-danger alert-dismissible">
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">×</span>
+          </button>
+        There was a problem with the submission, please correct the highlighted field below.
+        </div>
+
+    {% endif %}
+
+
+    <form action="" method="POST">
+        {% csrf_token %}
+
+     <div class="form-group {% if form.errors.name %}has-error{% endif %}">
+        <label for="name">Name</label>
+        <input type="text" class="form-control" id="name" name="name" placeholder="Node name" value="{{form.name.value|default:''}}">
+        {% if form.errors.name %}
+            <p class="help-block error">{{form.errors.name}}</p>
+        {% endif %}
+    </div>
+
+     <div class="form-group {% if form.errors.address %}has-error{% endif %}">
+        <label for="address">IP Address</label>
+        <input type="text" class="form-control" id="address" name="address" placeholder="IP Address..." value="{{form.address.value|default:''}}">
+        {% if form.errors.address %}
+            <p class="help-block error">{{form.errors.address}}</p>
+        {% endif %}
+    </div>
+
+    <button type="submit" class="btn btn-success">Submit</button>
+    <button type="reset" class="btn btn-default">Reset</button>
+
+    </form>
