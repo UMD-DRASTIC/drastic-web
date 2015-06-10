@@ -82,8 +82,9 @@
                    <ul class="dropdown-menu" role="menu">
                     <li><a href="{% url 'archive:home' %}">Archive</a></li>
 
-                    <!-- TODO: If user has permission -->
+                    {% if user.administrator %}
                     <li><a href="{% url 'nodes:home' %}">Nodes</a></li>
+                    {% endif %}
 
                     <!-- TODO: If user is logged in -->
                     <li><a href="{% url 'users:home' %}">Users</a></li>

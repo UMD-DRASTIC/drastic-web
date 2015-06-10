@@ -24,7 +24,6 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = (
     'flat',
-    'django.contrib.admin',
     'django.contrib.sites',
     'django.contrib.staticfiles',
     'django.contrib.auth',
