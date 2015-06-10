@@ -118,7 +118,20 @@ try:
 except:
     pass
 
+##############################################################################
+# Caching
+##############################################################################
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
 
+
+##############################################################################
+# Initialise the database connection
+# TODO: Move this somewhere more useful!
+##############################################################################
 from indigo.models import initialise
 initialise("indigo")
-print "Indigo initialised"
+
