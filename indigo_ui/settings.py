@@ -37,7 +37,7 @@ INSTALLED_APPS = (
     'django_gravatar',
 
 
-    'indigo',
+    'indigo_ui',
     'archive',
     'activity',
     'nodes',
@@ -63,7 +63,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.security.SecurityMiddleware',
 )
 
-ROOT_URLCONF = 'indigo.urls'
+ROOT_URLCONF = 'indigo_ui.urls'
 
 TEMPLATES = [
     {
@@ -87,7 +87,7 @@ CDMI_SERVER = {
     "password": "",
 }
 
-WSGI_APPLICATION = 'indigo.wsgi.application'
+WSGI_APPLICATION = 'indigo_ui.wsgi.application'
 
 DATABASES = {
     'test': {

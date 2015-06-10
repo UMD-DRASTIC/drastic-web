@@ -1,3 +1,6 @@
+import uuid
+import datetime
+
 from django.shortcuts import render
 from django.core.urlresolvers  import reverse
 from django.http import HttpResponseRedirect
@@ -7,28 +10,13 @@ from django.contrib import messages
 from .forms import NodeForm
 from .client import NodeClient
 
-import uuid
-import datetime
+from indigo.models import Node
+from indigo.models.errors import UniqueException
+
 
 @login_required
 def home(request):
-
-    # TODO: Fix me by looking up actual data.
-    nodes = []
-    for x in range(1, 8):
-        nodes.append(
-        {
-            "id": str(uuid.uuid4()),
-            "name": "Test node %s" % x,
-            "address": "192.168.10.1%s" % x,
-            "last_contact": datetime.datetime.now(),
-            "status": "up"
-        })
-
-    nodes[2]['status'] = 'unknown'
-    nodes[5]['status'] = 'down'
-
-
+    nodes = [n.to_dict() for n in Node.list()]
     return render(request, 'nodes/index.html', {"nodes": nodes})
 
 @login_required
@@ -36,7 +24,13 @@ def new(request):
     form = NodeForm(request.POST or None)
     if request.method == 'POST':
         if form.is_valid():
-            messages.add_message(request, messages.INFO, 'New node was added')
+            try:
+                Node.create(name=form.cleaned_data["name"],
+                            address=form.cleaned_data["address"])
+                messages.add_message(request, messages.INFO, 'New node was added')
+            except UniqueException:
+                messages.add_message(request, messages.ERROR, 'That name is already in use')
+
             return HttpResponseRedirect(reverse('nodes:home'))
 
     return render(request, 'nodes/new.html', {'form': form})
@@ -44,17 +38,17 @@ def new(request):
 
 @login_required
 def edit(request, id):
-    initial_data = {
-        "id": "id",
-        "name": "Editing ...",
-        "address": "192.168.0.1"
-    }
+    # TODO: Create the initial_data from the node itself, if we can
+    # find it.
+    node = Node.find_by_id(id)
+    initial_data = node.to_dict()
 
     if request.method == 'POST':
         form = NodeForm(request.POST)
         if form.is_valid():
-            messages.add_message(request, messages.INFO, 'Node information has been changed')
-            print "Message!"
+            node.update(name=form.cleaned_data['name'], address=form.cleaned_data['address'])
+            messages.add_message(request, messages.INFO,
+                                 "Node information for '{}' has been changed".format(form.cleaned_data['name']))
             return HttpResponseRedirect(reverse('nodes:home'))
     else:
         form = NodeForm(initial=initial_data)
@@ -63,14 +57,26 @@ def edit(request, id):
 
 @login_required
 def check(request, id):
-    # TODO: Get the node details
-    address = "192.168.10.111"
+    node = Node.find_by_id(id)
 
-    client = NodeClient(address)
+    client = NodeClient(node.address)
     ok, metrics = client.get_state()
     if ok:
         messages.add_message(request, messages.INFO, 'The node was reachable')
     else:
-        messages.add_message(request, messages.WARNING, 'The node at {} was unreachable'.format(address))
+        messages.add_message(request, messages.WARNING, 'The node at {} was unreachable'.format(node.address))
+        node.update(status="DOWN", last_update=datetime.datetime.now())
     return HttpResponseRedirect(reverse("nodes:home"))
 
+
+@login_required
+def logview(request, id):
+    # TODO: Get log details for an actual node.....
+    node =         {
+            "id": str(uuid.uuid4()),
+            "name": "Test node 1",
+            "address": "192.168.10.12",
+            "last_contact": datetime.datetime.now(),
+            "status": "up"
+        }
+    return render(request, 'nodes/logs.html', { "node": node})
