@@ -1,3 +1,4 @@
+from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -23,6 +24,47 @@ def home(request):
         "user_count": user_objs.count()
     }
     return render(request, 'users/index.html', ctx)
+
+def userlogin(request):
+    from django.contrib.auth import login
+    from indigo.models import User
+
+    if request.method == "GET":
+        return render(request, 'users/login.html', {})
+
+    errors = ""
+    username = request.POST.get('username')
+    password = request.POST.get('password')
+
+    invalid = "Username/Password not valid"
+
+    if not username or not password:
+        errors = "Username and password are required"
+
+    if not errors:
+        user = User.find(username)
+        if not user:
+            errors = invalid
+        else:
+            if not user.authenticate(password):
+                errors = invalid
+
+        if not errors:
+            request.session['user'] = unicode(user.id)
+            return HttpResponseRedirect("/")
+
+    ctx = {}
+    if errors:
+        ctx = {'errors': errors}
+
+
+    return render(request, 'users/login.html', ctx)
+
+
+def userlogout(request):
+    request.session.flush()
+    request.user = None
+    return render(request, 'users/logout.html', {})
 
 @login_required
 def user_view(request, id):

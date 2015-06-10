@@ -71,18 +71,15 @@
             </li>
           </ul>
           <ul class="nav navbar-nav navbar-right">
-              {% if not user.is_authenticated %}
-                  <li><a href="/accounts/login">Login</a></li>
+              {% if not request.user.is_authenticated %}
+                  <li><a href="{% url 'users:auth_login' %}">Login</a></li>
               {% else %}
-
                 <li class="dropdown">
-                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Welcome, {{ user.get_full_name|default:user.username}} <span class="pull-left" style="margin-top:-10px;margin-right: 8px;">{% gravatar user.email 40 %}</span>
- <span class="caret"></span></a>
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+                    Welcome, {{ request.user.get_full_name|default:request.user.username }} <span class="pull-left" style="margin-top:-10px;margin-right: 8px;">{% gravatar request.user.email 40 %}</span>
+                    <span class="caret"></span>
+                  </a>
                    <ul class="dropdown-menu" role="menu">
-                    {% if user.is_staff %}
-                      <li><a href="/admin">Admin</a></li>
-                      <li class="divider"></li>
-                    {% endif %}
                     <li><a href="{% url 'archive:home' %}">Archive</a></li>
 
                     <!-- TODO: If user has permission -->
@@ -92,10 +89,10 @@
                     <li><a href="{% url 'users:home' %}">Users</a></li>
                     <li><a href="{% url 'activity:home' %}">Activity</a></li>
                     <li class="divider"></li>
-                    <li><a href="{% url 'auth_logout' %}">Logout</a></li>
+                    <li><a href="{% url 'users:auth_logout' %}">Logout</a></li>
                   </ul>
                 </li>
-                {% endif %}
+              {% endif %}
           </ul>
         </div>
       </div>
@@ -105,6 +102,7 @@
 
 
       {% block content %}
+
 
       {% if user.is_authenticated %}
         <div class="row">
@@ -138,8 +136,7 @@
       </ul>
     {% endif %}
 
-
-          {% block main_content %}
+              {% block main_content %}
           {% endblock main_content %}
         </div>
 
@@ -152,7 +149,6 @@
     {% block extra_javascript %}
     {% endblock extra_javascript %}
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
-    <script src="/static/js/bootstrap.min.js"></script>
     <script src="/static/js/ie10-viewport-bug-workaround.js"></script>
   </body>
 </html>

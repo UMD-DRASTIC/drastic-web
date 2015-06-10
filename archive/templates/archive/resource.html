@@ -5,7 +5,7 @@
 {% block main_content %}
 
 <h2>Resource - {{resource.name}}
-<a class="pull-right btn" href="{% url 'archive:view' path=resource.parentURI %}">
+<a class="pull-right btn btn-default" href="{% url 'archive:view' path=resource.parentURI %}">
 &laquo; Back to {{ resource.collection.name }} collection
 </a>
 </h2>

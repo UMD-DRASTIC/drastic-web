@@ -33,7 +33,6 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django_extensions',
     'rest_framework',
-    'registration',
     'django_gravatar',
 
 
@@ -45,12 +44,10 @@ INSTALLED_APPS = (
     'router'
 )
 
+DEFAULT_APP_CONFIG = 'indigo_ui.IndigoAppConfig'
+
 SITE_ID = 1
 
-# Registration config
-ACCOUNT_ACTIVATION_DAYS = 7
-REGISTRATION_AUTO_LOGIN = True
-GRAVATAR_DEFAULT_IMAGE = "identicon"
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -61,6 +58,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'users.middleware.CassandraAuth'
 )
 
 ROOT_URLCONF = 'indigo_ui.urls'
@@ -120,3 +118,8 @@ try:
     from local_settings import *
 except:
     pass
+
+
+from indigo.models import initialise
+initialise("indigo")
+print "Indigo initialised"
