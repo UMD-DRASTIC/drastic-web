@@ -1,1 +1,10 @@
-{{ status|upper }}
+<span class="status-{{node.status|lower}}">
+    {% if status == "UP" %}
+    <i class="glyphicon glyphicon-arrow-up"></i>
+    UP
+    {% endif %}
+    {% if status == "DOWN" %}
+    <i class="glyphicon glyphicon-arrow-down"></i>
+    DOWN
+    {% endif %}
+</span>

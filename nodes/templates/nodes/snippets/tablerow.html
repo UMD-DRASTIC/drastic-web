@@ -1,7 +1,7 @@
 
 
 
-<tr class="{% if node.status == 'DOWN' %}danger{% endif %}">
+<tr>
     <td>
         {{ node.name }}
     </td>
@@ -12,7 +12,7 @@
        {{ node.last_update|date:"d M H:m" }}
     </td>
     <td>
-       {% include "nodes/snippets/status.html" with status=node.status%}
+       {% include "nodes/snippets/status.html" with status=node.status %}
     </td>
     <td>
         ....

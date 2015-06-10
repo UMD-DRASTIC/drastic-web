@@ -71,12 +71,7 @@ def check(request, id):
 
 @login_required
 def logview(request, id):
-    # TODO: Get log details for an actual node.....
-    node =         {
-            "id": str(uuid.uuid4()),
-            "name": "Test node 1",
-            "address": "192.168.10.12",
-            "last_contact": datetime.datetime.now(),
-            "status": "up"
-        }
+    node = Node.find_by_id(id)
+
     return render(request, 'nodes/logs.html', { "node": node})
+

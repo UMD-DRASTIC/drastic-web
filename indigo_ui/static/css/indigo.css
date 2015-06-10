@@ -32,12 +32,12 @@ ul.nav-sidebar {
 }
 
 .status-up {
-    color: green;
+    color: #28BB9C;
 }
 .status-unknown {
     color: yellow;
 }
 .status-down {
-    color: red;
+    color: #E54D42;
 }
 
