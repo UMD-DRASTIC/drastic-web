@@ -1,0 +1,32 @@
+
+{% if form.errors %}
+    <div class="alert alert-danger">
+    Please correct the problem in the form below.
+    </div>
+{% endif %}
+
+
+
+{% if action == 'edit' %}
+    {% url 'archive:edit' id=collection.id as post_url %}
+{% else %}
+    {% url 'archive:new' parent=collection.id as post_url %}
+{% endif %}
+
+
+<form id="loginForm" method="POST" action="{{post_url}}" novalidate="novalidate">
+    {% csrf_token %}
+    <div class="form-group {% if form.errors.name %}has-error{% endif %}">
+        <label for="name" class="control-label">Name</label>
+        <input type="text" class="form-control" id="name" name="name" value="{{form.name.value|default:''}}"  title="Enter the collection name" placeholder="Name of collection">
+    </div>
+
+
+    <button type="submit" class="btn btn-success btn-block">Save</button>
+</form>
+
+<script type="text/javascript">
+$(document).ready(function(){
+    $('#name').focus();
+});
+</script>

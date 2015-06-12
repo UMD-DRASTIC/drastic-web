@@ -132,6 +132,12 @@ CACHES = {
 # Initialise the database connection
 # TODO: Move this somewhere more useful!
 ##############################################################################
-from indigo.models import initialise
+from indigo.models import initialise, Collection
 initialise("indigo")
+root = Collection.get_root_collection()
+if not root:
+    print "Creating root collection"
+    Collection.create(name="Home", path="/")
+else:
+    print "Using existing root collection"
 

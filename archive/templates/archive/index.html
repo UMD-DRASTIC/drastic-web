@@ -10,17 +10,17 @@
     </div>
 </h2>
 <hr/>
-{# This should be a permissions check, not a super-user check #}
-{% if user.is_superuser %}
+
+{% if request.user.is_authenticated %}
     <div class="control-bar">
         <div class="col-md-offset-1 col-md-3">
-            <a href="{% url 'archive:new' %}">New Collection</a>
+            <a href="{% url 'archive:new' parent=collection.id %}">New Collection</a>
         </div>
         <div class="col-md-3">
-            <a href="{% url 'archive:new' %}">Edit Current Collection</a>
+            <a href="{% url 'archive:edit' id=collection.id %}">Edit Current Collection</a>
         </div>
         <div class="col-md-3">
-            <a href="{% url 'archive:new' %}">Delete Current Collection</a>
+            <a href="{% url 'archive:delete' id=collection.id %}">Delete Current Collection</a>
         </div>
 
         <div class="clearfix"></div>
@@ -29,6 +29,7 @@
 {% endif %}
 
 {% include "archive/snippets/collection.html" with collection=collection%}
+
 
 {% endblock main_content %}
 

@@ -1,0 +1,18 @@
+{% extends "archive/base.html" %}
+
+{% block title %}Edit Collection - {{collection.name}}{% endblock title %}
+
+{% block main_content %}
+
+<h2>Edit Collection - {{collection.name}}
+    <a class="pull-right btn btn-default" href="{% url 'archive:view' path=collection.path %}">
+    &laquo; Back to {{ collection.name }} collection
+    </a>
+</h2>
+<hr/>
+
+{% include "archive/snippets/collection_form.html" with form=form collection=collection action='edit'%}
+
+{% endblock main_content %}
+
+

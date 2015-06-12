@@ -1,0 +1,19 @@
+{% extends "archive/base.html" %}
+
+{% block title %}New Collection{% endblock title %}
+
+{% block main_content %}
+
+<h2>New Collection
+    <a class="pull-right btn btn-default" href="{% url 'archive:view' path=parent.path %}">
+    &laquo; Back to {{ parent.name }} collection
+    </a>
+    </h2>
+<hr/>
+
+
+{% include "archive/snippets/collection_form.html" with form=form collection=parent  action='new' %}
+
+{% endblock main_content %}
+
+

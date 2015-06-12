@@ -5,8 +5,16 @@ from django.conf import settings
 from django.http import StreamingHttpResponse, HttpResponse
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+
 
 from archive.client import get_default_client
+from archive.forms import CollectionForm
+from users.authentication import administrator_required
+
+from indigo.models import Collection
+from indigo.models.errors import UniqueException
+
 
 def home(request):
     return redirect('archive:view', path='')
@@ -26,46 +34,27 @@ def resource_view(request, path):
     resource['path'] = path
     return render(request, 'archive/resource.html', {"resource": resource})
 
+
 def navigate(request, path):
 
     client     = get_default_client()
-    collection = client.get_collection(path if path.startswith("/") else "/{}".format(path))
+    #collection = client.get_collection(path if path.startswith("/") else "/{}".format(path))
 
-    collections = []
-    resources   = []
+    collection = Collection.find_by_path(path or '/')
 
-    for child in collection.get("children"):
-        if child.endswith("/"):
-            collections.append(child)
-        else:
-            resources.append(child)
-
-    collections.sort()
-    resources.sort()
-
-    parts = path.split("/")
-
-    def make_collection_dict(c):
-        return {
-            "name": c,
-            "path": "{}{}".format(path, c)
-        }
-
-    def make_resource_dict(r):
-        name, ext = os.path.splitext(r)
-        return {
-            "name": r,
-            "type": ext[1:].upper(),
-            "path": "{}{}".format(path, r)
-        }
-
+    paths = []
+    full = ""
+    for p in collection.path.split('/'):
+        if not p:
+            continue
+        full = u"{}/{}".format(full, p)
+        paths.append( (p,full,) )
 
     ctx = {
-        'collection': {
-            'collection_paths': [p for p in path.split('/') if p],
-            'collections': [make_collection_dict(c) for c in collections],
-            'resources': [make_resource_dict(r) for r in resources],
-        }
+        'collection': collection,
+        'child_collections': collection.get_child_collections(),
+        'child_collections_count': collection.get_child_collection_count(),
+        'collection_paths': paths
     }
 
     return render(request, 'archive/index.html', ctx)
@@ -91,8 +80,50 @@ def search(request):
     return render(request, 'archive/search.html', ctx)
 
 @login_required
-def new(request):
-    return render(request, 'archive/index.html', {})
+def new(request, parent):
+    if not parent:
+        parent_collection = Collection.get_root_collection()
+    else:
+        parent_collection = Collection.find_by_id(parent)
+
+    form = CollectionForm(request.POST or None)
+    if request.method == 'POST':
+        if form.is_valid():
+            data = form.cleaned_data
+            data['parent'] = parent_collection.id
+            try:
+                collection = Collection.create(**data)
+                messages.add_message(request, messages.INFO,
+                                     u"New collection '{}' created" .format(collection.name))
+                return redirect('archive:view', path=parent_collection.path)
+            except UniqueException:
+                messages.add_message(request, messages.ERROR,
+                                     "That name is in use in the current collection")
+    return render(request, 'archive/new.html', {'form': form, "parent": parent_collection})
+
+@login_required
+def edit(request, id):
+    coll = Collection.find_by_id(id)
+    if request.method == "POST":
+        form = CollectionForm(request.POST)
+        if form.is_valid():
+            # TODO: Check for duplicates
+            try:
+                coll.update(name=form.cleaned_data['name'])
+                return redirect('archive:view', path=coll.path)
+            except UniqueException:
+                messages.add_message(request, messages.ERROR,
+                                     "That name is in use in the current collection")
+
+    else:
+        form = CollectionForm(initial={'name':coll.name})
+
+    return render(request, 'archive/edit.html', {'form': form, 'collection': coll})
+
+@login_required
+def delete(request, id):
+    return render(request, 'archive/delete.html', {})
+
 
 @login_required
 def download(request, path):
