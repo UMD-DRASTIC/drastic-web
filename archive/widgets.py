@@ -60,11 +60,29 @@ class JsonPairInputs(Widget):
                        'fieldname':name,
                        'key_attrs': flatatt(self.key_attrs),
                        'val_attrs': flatatt(self.val_attrs) }
-                ret += '<div class="form-group">'
-                ret += '<input class="col-md-offset-1 col-md-4" type="text" name="json_key[%(fieldname)s]" value="%(key)s" %(key_attrs)s> \
-                <div class="col-md-1"><center>=</center></div> \
-                <input class="col-md-4" type="text" name="json_value[%(fieldname)s]" value="%(value)s" %(val_attrs)s><br />' % ctx
-                ret += '</div>'
+                ret += """
+                    <div class="form-group" id="">
+                        <div class="col-md-4">
+                            <input placeholder="Key" class="form-control" type="text" name="json_key[%(fieldname)s]" value="%(key)s" %(key_attrs)s>
+                        </div>
+                        <div class="col-md-1" style="font-size: 2em; text-align: center;">
+                        =
+                        </div>
+                        <div class="col-md-5">
+                            <input placeholder="Value"  class="form-control" type="text" name="json_value[%(fieldname)s]" value="%(value)s" %(val_attrs)s>
+                        </div>
+                        <div class="col-md-2 btn-group" role="group" aria-label="...">
+                            <a class="btn btn-large btn-success">
+                                <i class="glyphicon glyphicon-plus"></i>
+                            </a>
+                            <a class="btn btn-large btn-danger">
+                                <i class="glyphicon glyphicon-minus"></i>
+                            </a>
+                        </div>
+                        <div class="clearfix"></div>
+                    </div>
+                    """ % ctx
+        ret = '<span id="metadata_fields">' + ret + '</span>'
         return mark_safe(ret)
 
     def value_from_datadict(self, data, files, name):

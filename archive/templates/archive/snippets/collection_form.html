@@ -21,6 +21,7 @@
         <input type="text" class="form-control" id="name" name="name" value="{{form.name.value|default:''}}"  title="Enter the collection name" placeholder="Name of collection">
     </div>
 
+    <h4>Metadata</h4>
     {{form.metadata}}
 
     <button type="submit" class="btn btn-success btn-block">Save</button>
@@ -29,5 +30,65 @@
 <script type="text/javascript">
 $(document).ready(function(){
     $('#name').focus();
+
+    var mf_fields_count = $("#metadata_fields .form-group").size()
+
+    function setminus_visibile_on_first_row() {
+        var first = $("#metadata_fields .form-group").get(0);
+        var btn = $(first).find(".btn-danger");
+
+        if (mf_fields_count < 1) {
+            btn.hide();
+        } else {
+            btn.show();
+        }
+
+    }
+
+    function clone_and_clean(element) {
+        var obj = element.clone()
+
+        var inputs = $(obj).find("input");
+        inputs.each(function(idx, input){
+            $(this).val("");
+        });
+
+
+        return obj;
+    }
+
+    function prep(container, index, value) {
+        var minus = $(container).find('.btn-danger');
+        var plus  = $(container).find('.btn-success');
+
+        minus.click(function(){
+            $(container).remove();
+            mf_fields_count -= 1;
+            setminus_visibile_on_first_row();
+        });
+
+        plus.click(function(){
+            var newrow = clone_and_clean($(container));
+            newrow.appendTo($(container).parent());
+
+            mf_fields_count += 1;
+            prep(newrow, mf_fields_count-1, "" );
+            setminus_visibile_on_first_row();
+        });
+
+        if(index == 0) {
+            minus.hide();
+        } else {
+            minus.show();
+        }
+    }
+
+
+    $("#metadata_fields .form-group").each(function(index, value){
+        var that = $(this);
+        prep(that, index, value);
+    });
 });
+
+
 </script>
