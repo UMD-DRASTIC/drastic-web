@@ -21,6 +21,11 @@
         <input type="text" class="form-control" id="name" name="name" value="{{form.name.value|default:''}}"  title="Enter the collection name" placeholder="Name of collection">
     </div>
 
+    <h4>Permissions</h4>
+    <div>
+    &nbsp;
+    </div>
+
     <h4>Metadata</h4>
     {{form.metadata}}
 
@@ -37,7 +42,8 @@ $(document).ready(function(){
         var first = $("#metadata_fields .form-group").get(0);
         var btn = $(first).find(".btn-danger");
 
-        if (mf_fields_count < 1) {
+        console.log(mf_fields_count.toString());
+        if (mf_fields_count <= 1) {
             btn.hide();
         } else {
             btn.show();
