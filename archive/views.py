@@ -1,3 +1,4 @@
+import json
 import os
 import requests
 
@@ -51,8 +52,8 @@ def navigate(request, path):
         paths.append( (p,full,) )
 
     ctx = {
-        'collection': collection,
-        'child_collections': collection.get_child_collections(),
+        'collection': collection.to_dict(),
+        'child_collections': [c.to_dict() for c in collection.get_child_collections()],
         'child_collections_count': collection.get_child_collection_count(),
         'collection_paths': paths
     }
@@ -86,13 +87,17 @@ def new(request, parent):
     else:
         parent_collection = Collection.find_by_id(parent)
 
-    form = CollectionForm(request.POST or None)
+    form = CollectionForm(request.POST or None, initial={'metadata':'{"":""}'})
     if request.method == 'POST':
         if form.is_valid():
             data = form.cleaned_data
-            data['parent'] = parent_collection.id
             try:
-                collection = Collection.create(**data)
+                name = data['name']
+                parent = parent_collection.id
+                metadata = {}
+                for k, v in json.loads(data['metadata']):
+                    metadata[k] = v
+                collection = Collection.create(name=name, parent=parent, metadata=metadata)
                 messages.add_message(request, messages.INFO,
                                      u"New collection '{}' created" .format(collection.name))
                 return redirect('archive:view', path=parent_collection.path)
@@ -108,15 +113,21 @@ def edit(request, id):
         form = CollectionForm(request.POST)
         if form.is_valid():
             # TODO: Check for duplicates
+            metadata = {}
+            for k, v in json.loads(form.cleaned_data['metadata']):
+                metadata[k] = v
+
             try:
-                coll.update(name=form.cleaned_data['name'])
+                coll.update(name=form.cleaned_data['name'], metadata=metadata)
                 return redirect('archive:view', path=coll.path)
             except UniqueException:
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use in the current collection")
-
     else:
-        form = CollectionForm(initial={'name':coll.name})
+        metadata = json.dumps(coll.metadata)
+        if not coll.metadata:
+            metadata = '{"":""}'
+        form = CollectionForm(initial={'name':coll.name, 'metadata': metadata})
 
     return render(request, 'archive/edit.html', {'form': form, 'collection': coll})
 

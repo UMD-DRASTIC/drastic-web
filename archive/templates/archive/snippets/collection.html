@@ -10,6 +10,11 @@
   {% endfor %}
 </ol>
 
+<h4>Metadata</h4>
+  {% include "archive/snippets/metadata.html" with metadata=collection.metadata id=collection.id %}
+<hr/>
+
+<h4>Collections</h4>
 {% for c in child_collections %}
     {% include "archive/snippets/collection_entry.html" with collection=c %}
 {% endfor %}
@@ -24,3 +29,6 @@
     <p>This collection is empty.</p>
   {% endif %}
 {% endif %}
+
+
+

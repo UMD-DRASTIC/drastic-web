@@ -1,10 +1,16 @@
 
 <div class="collection-entry">
 
-  <a href="{% url 'archive:view' path=collection.path %}">
-    <i class="blue-icon glyphicon glyphicon-tags"></i>&nbsp;&nbsp;
-    {{ collection.name }}
-  </a>
+    <div class="col-md-6">
+      <a href="{% url 'archive:view' path=collection.path %}">
+        <i class="blue-icon glyphicon glyphicon-tags"></i>&nbsp;&nbsp;
+        {{ collection.name }}
+      </a>
+    </div>
+
+    {% include "archive/snippets/metadata_dropdown.html" with metadata=collection.metadata id=collection.id %}
+
+  <div class="clearfix"></div>
 </div>
 <hr/>
 

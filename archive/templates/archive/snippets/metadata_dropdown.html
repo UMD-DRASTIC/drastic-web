@@ -1,0 +1,8 @@
+<a  data-toggle="collapse" href="#{{id}}-collapse" aria-expanded="false" aria-controls="collapseExample">
+  Metadata
+</a>
+<div class="collapse" id="{{id}}-collapse" style="margin-top:28px;">
+  <div class="well">
+     {% include "archive/snippets/metadata.html" with metadata=metadata %}
+  </div>
+</div>
