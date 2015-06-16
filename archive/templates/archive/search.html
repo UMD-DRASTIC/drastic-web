@@ -4,21 +4,22 @@
 
 {% block main_content %}
 
-<h2>Search {% if q %}for '{{q}}'{% endif %}</h2>
+<h2>Search {% if q %}results{% endif %}</h2>
 <hr/>
 {% include "snippets/search_form.html" with q=q size="full"%}
-
 <hr/>
 
-{% for c in results.collections%}
-    {% include "archive/snippets/collection_entry.html" with collection=c %}
+
+{% for c in results%}
+    {% if c.type == 'Collection' %}
+        {% include "archive/snippets/collection_entry.html" with collection=c highlights=highlights %}
+    {% endif %}
+
+{% empty %}
+    {% if q %}
+        <h2>No results were found for '{{q}}'</h2>
+    {% endif %}
 {% endfor %}
-
-
-{% for r in results.resources %}
-    {% include "archive/snippets/resource_entry.html" with resource=r %}
-{% endfor %}
-
 
 {% endblock main_content %}
 

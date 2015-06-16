@@ -15,6 +15,7 @@ from archive.forms import CollectionForm
 from users.authentication import administrator_required
 
 from indigo.models import Collection
+from indigo.models.search import SearchIndex
 from indigo.models.errors import UniqueException
 
 
@@ -63,7 +64,7 @@ def navigate(request, path):
 
     def child_collections():
         res = []
-        for coll in in collection.get_child_collections():
+        for coll in collection.get_child_collections():
             if collection.user_can(request.user, "read"):
                 res.append(coll)
         return res
@@ -84,15 +85,11 @@ def search(request):
         "q": query
     }
 
-    ctx['results'] = {}
-    if query:
-        ctx['results']['collections'] = [
-            {"name": "something", "path": "data/something"},
-        ]
-        ctx['results']['resources'] = [
-            {"name": "A CSV file", "type": "CSV", "id": "Y"},
-            {"name": "An XML file", "type": "XML", "id": "Z"},
-        ]
+    terms = [x.lower() for x in query.split(' ')]
+
+    ctx['results'] = SearchIndex.find(terms)
+    ctx['total'] = len(ctx['results'])
+    ctx['highlights'] = terms
 
     return render(request, 'archive/search.html', ctx)
 
@@ -117,6 +114,7 @@ def new(request, parent):
                 for k, v in json.loads(data['metadata']):
                     metadata[k] = v
                 collection = Collection.create(name=name, parent=parent, metadata=metadata)
+                SearchIndex.index(collection, ['name'])
                 messages.add_message(request, messages.INFO,
                                      u"New collection '{}' created" .format(collection.name))
                 return redirect('archive:view', path=parent_collection.path)
@@ -142,6 +140,10 @@ def edit(request, id):
 
             try:
                 coll.update(name=form.cleaned_data['name'], metadata=metadata)
+
+                SearchIndex.reset(coll.id)
+                SearchIndex.index(coll, ['name'])
+
                 return redirect('archive:view', path=coll.path)
             except UniqueException:
                 messages.add_message(request, messages.ERROR,
@@ -160,6 +162,8 @@ def delete(request, id):
 
     if not coll.user_can(request.user, "delete"):
         return HttpResponseForbidden()
+
+    SearchIndex.reset(coll)
 
     return render(request, 'archive/delete.html', {})
 
