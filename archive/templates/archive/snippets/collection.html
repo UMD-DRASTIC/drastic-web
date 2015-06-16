@@ -24,10 +24,8 @@
     {% include "archive/snippets/resource_entry.html" with resource=r %}
 {% endfor %}
 
-{% if child_collections_count == 0 %}
-  {% if child_collections_count == 0 %}
+{% if child_collections|length == 0 %}
     <p>This collection is empty.</p>
-  {% endif %}
 {% endif %}
 
 
