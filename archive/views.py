@@ -114,7 +114,7 @@ def new(request, parent):
                 for k, v in json.loads(data['metadata']):
                     metadata[k] = v
                 collection = Collection.create(name=name, parent=parent, metadata=metadata)
-                SearchIndex.index(collection, ['name'])
+                SearchIndex.index(collection, ['name', 'metadata'])
                 messages.add_message(request, messages.INFO,
                                      u"New collection '{}' created" .format(collection.name))
                 return redirect('archive:view', path=parent_collection.path)
@@ -142,7 +142,7 @@ def edit(request, id):
                 coll.update(name=form.cleaned_data['name'], metadata=metadata)
 
                 SearchIndex.reset(coll.id)
-                SearchIndex.index(coll, ['name'])
+                SearchIndex.index(coll, ['name', 'metadata'])
 
                 return redirect('archive:view', path=coll.path)
             except UniqueException:
