@@ -14,7 +14,8 @@ from archive.client import get_default_client
 from archive.forms import CollectionForm
 from users.authentication import administrator_required
 
-from indigo.models import Collection
+from indigo.models.collection import Collection
+from indigo.models.group import Group
 from indigo.models.search import SearchIndex
 from indigo.models.errors import UniqueException
 
@@ -113,15 +114,23 @@ def new(request, parent):
                 metadata = {}
                 for k, v in json.loads(data['metadata']):
                     metadata[k] = v
-                collection = Collection.create(name=name, parent=parent, metadata=metadata)
+                collection = Collection.create(name=name,
+                                               parent=parent,
+                                               metadata=metadata,
+                                               read_access=data['read_access'],
+                                               write_access=data['write_access'],
+                                               delete_access=data['delete_access'],
+                                               edit_access=data['edit_access'])
                 SearchIndex.index(collection, ['name', 'metadata'])
                 messages.add_message(request, messages.INFO,
                                      u"New collection '{}' created" .format(collection.name))
-                return redirect('archive:view', path=parent_collection.path)
+                return redirect('archive:view', path=collection.path)
             except UniqueException:
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use in the current collection")
-    return render(request, 'archive/new.html', {'form': form, "parent": parent_collection})
+
+    groups = Group.objects.all()
+    return render(request, 'archive/new.html', {'form': form, "parent": parent_collection, "groups": groups})
 
 @login_required
 def edit(request, id):
@@ -139,7 +148,14 @@ def edit(request, id):
                 metadata[k] = v
 
             try:
-                coll.update(name=form.cleaned_data['name'], metadata=metadata)
+                data = form.cleaned_data
+                print data
+                coll.update(name=data['name'],
+                            metadata=metadata,
+                            read_access=data['read_access'],
+                            write_access=data['write_access'],
+                            delete_access=data['delete_access'],
+                            edit_access=data['edit_access'])
 
                 SearchIndex.reset(coll.id)
                 SearchIndex.index(coll, ['name', 'metadata'])
@@ -152,9 +168,16 @@ def edit(request, id):
         metadata = json.dumps(coll.metadata)
         if not coll.metadata:
             metadata = '{"":""}'
-        form = CollectionForm(initial={'name':coll.name, 'metadata': metadata})
 
-    return render(request, 'archive/edit.html', {'form': form, 'collection': coll})
+        initial_data = {'name':coll.name, 'metadata': metadata,
+            'read_access': coll.read_access,
+            'write_access': coll.write_access,
+            'edit_access': coll.edit_access,
+            'delete_access': coll.delete_access}
+        form = CollectionForm(initial=initial_data)
+
+    groups = Group.objects.all()
+    return render(request, 'archive/edit.html', {'form': form, 'collection': coll, 'groups': groups})
 
 @login_required
 def delete(request, id):

@@ -21,11 +21,33 @@
         <input type="text" class="form-control" id="name" name="name" value="{{form.name.value|default:''}}"  title="Enter the collection name" placeholder="Name of collection">
     </div>
 
-    <h4>Permissions</h4>
-    <div>
-    &nbsp;
+    <div class="row">&nbsp;</div>
+    <div class="row">
+        <div class="col-md-3">
+            <strong>Read permission</strong>
+            <div class="checkbox">
+                {{form.read_access}}
+            </div>
+        </div>
+        <div class="col-md-3 left-border">
+            <strong>Write permission</strong>
+            <div class="checkbox">
+                {{form.write_access}}
+            </div>
+        </div>
+        <div class="col-md-3 left-border">
+            <strong>Edit permission</strong>
+            <div class="checkbox">
+                {{form.edit_access}}
+            </div>
+        </div>
+        <div class="col-md-3 left-border">
+            <strong>Delete permission</strong>
+            <div class="checkbox">
+            {{ form.delete_access }}
+            </div>
+        </div>
     </div>
-
     <h4>Metadata</h4>
     {{form.metadata}}
 
@@ -95,6 +117,16 @@ $(document).ready(function(){
         prep(that, index, value);
     });
 });
-
-
 </script>
+
+<style>
+#id_read_access li   { list-style: none; margin-left: -30px; }
+#id_write_access li  { list-style: none; margin-left: -30px; }
+#id_edit_access li   { list-style: none; margin-left: -30px; }
+#id_delete_access li { list-style: none; margin-left: -30px; }
+#id_read_access   { margin-top: 10px; }
+#id_write_access  { margin-top: 10px; }
+#id_edit_access   { margin-top: 10px; }
+#id_delete_access { margin-top: 10px; }
+.left-border { border-left: solid 1px #eee; }
+</style>
