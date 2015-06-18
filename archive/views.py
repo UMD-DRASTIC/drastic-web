@@ -24,6 +24,10 @@ from indigo.models.errors import UniqueException
 def home(request):
     return redirect('archive:view', path='')
 
+##############################################################################
+# Collection specific view functions
+##############################################################################
+
 @login_required()
 def resource_view(request, path):
     ctx = {"resource": {"id": id, "name": "A test name", "collection":{"name": "data"}}}
@@ -41,7 +45,27 @@ def resource_view(request, path):
         resource['parentURI'] = resource['parentURI'] + "/"
     resource['name'] = path.split('/')[-1]
     resource['path'] = path
-    return render(request, 'archive/resource.html', {"resource": resource})
+    return render(request, 'archive/resource/view.html', {"resource": resource})
+
+@login_required
+def new_resource(request, container):
+    # Requires write on container
+    # Inherits perms from container by default.
+    pass
+
+@login_required
+def edit_resource(request, id):
+    # Requires edit on resource
+    pass
+
+@login_required
+def delete_resource(request, id):
+    # Requires delete on resource
+    pass
+
+##############################################################################
+# Collection specific view functions
+##############################################################################
 
 @login_required()
 def navigate(request, path):
@@ -66,13 +90,14 @@ def navigate(request, path):
     def child_collections():
         res = []
         for coll in collection.get_child_collections():
-            if collection.user_can(request.user, "read"):
-                res.append(coll)
+            if not collection.user_can(request.user, "read"):
+                continue
+            res.append(coll)
         return res
 
     ctx = {
-        'collection': collection.to_dict(),
-        'child_collections': [c.to_dict() for c in child_collections()],
+        'collection': collection.to_dict(request.user),
+        'child_collections': [c.to_dict(request.user) for c in child_collections()],
         'collection_paths': paths
     }
 
@@ -95,7 +120,7 @@ def search(request):
     return render(request, 'archive/search.html', ctx)
 
 @login_required
-def new(request, parent):
+def new_collection(request, parent):
     if not parent:
         parent_collection = Collection.get_root_collection()
     else:
@@ -133,7 +158,7 @@ def new(request, parent):
     return render(request, 'archive/new.html', {'form': form, "parent": parent_collection, "groups": groups})
 
 @login_required
-def edit(request, id):
+def edit_collection(request, id):
     coll = Collection.find_by_id(id)
 
     if not coll.user_can(request.user, "edit"):
@@ -180,13 +205,13 @@ def edit(request, id):
     return render(request, 'archive/edit.html', {'form': form, 'collection': coll, 'groups': groups})
 
 @login_required
-def delete(request, id):
+def delete_collection(request, id):
     coll = Collection.find_by_id(id)
 
     if not coll.user_can(request.user, "delete"):
         return HttpResponseForbidden()
 
-    SearchIndex.reset(coll)
+    SearchIndex.reset(coll.id)
 
     return render(request, 'archive/delete.html', {})
 

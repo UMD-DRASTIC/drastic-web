@@ -4,29 +4,22 @@
 
 {% block main_content %}
 
-<h2>Collections
+
+<h2>{{collection.name}}
+    {% if collection.can_edit %}
+    &nbsp;&nbsp;<a class="btn btn-xs btn-success" href="{% url 'archive:edit_collection' id=collection.id %}">Edit</a>
+    {% endif %}
+    {% if collection.can_delete %}
+    <a class="btn btn-xs btn-danger" href="{% url 'archive:delete_collection' id=collection.id %}">Delete</a>
+    {% endif %}
+
+
     <div class="pull-right" style="width:400px;">
     {% include "snippets/search_form.html" with q=q size="small"%}
     </div>
 </h2>
 <hr/>
 
-{% if request.user.is_authenticated %}
-    <div class="control-bar">
-        <div class="col-md-offset-1 col-md-3">
-            <a href="{% url 'archive:new' parent=collection.id %}">New Collection</a>
-        </div>
-        <div class="col-md-3">
-            <a href="{% url 'archive:edit' id=collection.id %}">Edit Current Collection</a>
-        </div>
-        <div class="col-md-3">
-            <a href="{% url 'archive:delete' id=collection.id %}">Delete Current Collection</a>
-        </div>
-
-        <div class="clearfix"></div>
-    </div>
-    <hr/>
-{% endif %}
 
 {% include "archive/snippets/collection.html" with collection=collection%}
 

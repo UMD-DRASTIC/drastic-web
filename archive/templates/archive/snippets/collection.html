@@ -10,23 +10,34 @@
   {% endfor %}
 </ol>
 
-<h4>Metadata</h4>
+
+
   {% include "archive/snippets/metadata.html" with metadata=collection.metadata id=collection.id %}
 <hr/>
 
-<h4>Collections</h4>
+<h3>Collections
+    {% if collection.can_write %}
+    &nbsp;&nbsp;<a class="pull-right btn btn-xs btn-success" href="{% url 'archive:new_collection' parent=collection.id %}">Add new</a>
+    {% endif %}
+</h3>
 {% for c in child_collections %}
     {% include "archive/snippets/collection_entry.html" with collection=c %}
+{% empty %}
+    This collection has no sub-collections
 {% endfor %}
 
 
+<h3>Resources
+    {% if collection.can_write %}
+    &nbsp;&nbsp;<a class="pull-right btn btn-xs btn-success" href="{% url 'archive:new_resource' container=collection.id %}">Add new</a>
+    {% endif %}
+    </h3>
 {% for r in collection.resources %}
     {% include "archive/snippets/resource_entry.html" with resource=r %}
+{% empty %}
+  This collection has no resources
 {% endfor %}
 
-{% if child_collections|length == 0 %}
-    <p>This collection is empty.</p>
-{% endif %}
 
 
 
