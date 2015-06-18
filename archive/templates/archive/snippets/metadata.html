@@ -1,7 +1,5 @@
   {% for m in metadata %}
-    <span class="label label-success">
-    {{ m.0 }} = {{ m.1 }}&nbsp;
-    </span>
-  {% empty %}
-    This collection has no metadata
+    <span class="label label-{{label}}">
+    {{ m.0 }} = {{ m.1 }}
+    </span>&nbsp;&nbsp;
   {% endfor %}

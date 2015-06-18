@@ -1,19 +1,25 @@
 
-<div class="collection-entry">
+<div class="collection-entry row">
 
-    <div class="col-md-11">
+    <div class="col-md-12">
       <a href="{% url 'archive:view' path=collection.path %}">
         <i class="blue-icon glyphicon glyphicon-tags"></i>&nbsp;&nbsp;
         {{ collection.name }}
       </a>
     </div>
 
-
-    {% include "archive/snippets/metadata_dropdown.html" with metadata=collection.metadata id=collection.id %}
-    <span style="display:none;">Hit count: {{ c.hit_count }}</span>
-
-
-  <div class="clearfix"></div>
 </div>
+
+{% if collection.metadata %}
+<div class="row" style="margin-top: 10px;">
+    <div class="col-md-12">
+      {% include "archive/snippets/metadata.html" with metadata=collection.metadata label='default'%}
+    </div>
+</div>
+{% endif %}
+
+<span style="display:none;">Hit count: {{ c.hit_count }}</span>
+
+
 <hr/>
 

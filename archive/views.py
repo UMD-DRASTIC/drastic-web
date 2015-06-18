@@ -328,9 +328,14 @@ def delete_collection(request, id):
     if not coll.user_can(request.user, "delete"):
         return HttpResponseForbidden()
 
-    SearchIndex.reset(coll.id)
+    if request.method == "POST":
+        SearchIndex.reset(coll.id)
+        # TODO: Mark collection as inactive...
+        messages.add_message(request, messages.INFO,
+                                     "The collection '{}' has been deleted".format(coll.name))
+        return redirect('archive:view', path='')
 
-    return render(request, 'archive/delete.html', {})
+    return render(request, 'archive/delete.html', {'collection': coll})
 
 
 @login_required
