@@ -2,8 +2,8 @@
 <div class="resource-entry">
 
 
-  <a href="{% url 'archive:resource_view' path=resource.path %}">
-    <i class="label label-info">{{resource.type}}</i>&nbsp;
+  <a href="{% url 'archive:resource_view' id=resource.id %}">
+    <i class="label label-info">{{resource.type|default:"Unknown"}}</i>&nbsp;
     {{ resource.name }}
   </a>
 

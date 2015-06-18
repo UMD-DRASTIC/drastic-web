@@ -11,8 +11,12 @@
 
 
 {% for c in results%}
-    {% if c.type == 'Collection' %}
+    {% if c.result_type == 'Collection' %}
         {% include "archive/snippets/collection_entry.html" with collection=c highlights=highlights %}
+    {% endif %}
+
+    {% if c.result_type == 'Resource' %}
+        {% include "archive/resource/resource_entry.html" with resource=c highlights=highlights %}
     {% endif %}
 
 {% empty %}

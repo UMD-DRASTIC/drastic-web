@@ -11,11 +11,10 @@
 </ol>
 
 
-
-  {% include "archive/snippets/metadata.html" with metadata=collection.metadata id=collection.id %}
+{% include "archive/snippets/metadata.html" with metadata=collection.metadata id=collection.id %}
 <hr/>
 
-<h3>Collections
+<h3 style="margin-bottom:1em;">Collections
     {% if collection.can_write %}
     &nbsp;&nbsp;<a class="pull-right btn btn-xs btn-success" href="{% url 'archive:new_collection' parent=collection.id %}">Add new</a>
     {% endif %}
@@ -27,13 +26,14 @@
 {% endfor %}
 
 
-<h3>Resources
+<h3 style="margin-bottom:1em;">Resources
     {% if collection.can_write %}
     &nbsp;&nbsp;<a class="pull-right btn btn-xs btn-success" href="{% url 'archive:new_resource' container=collection.id %}">Add new</a>
     {% endif %}
-    </h3>
-{% for r in collection.resources %}
-    {% include "archive/snippets/resource_entry.html" with resource=r %}
+</h3>
+
+{% for r in child_resources %}
+    {% include "archive/resource/resource_entry.html" with resource=r %}
 {% empty %}
   This collection has no resources
 {% endfor %}

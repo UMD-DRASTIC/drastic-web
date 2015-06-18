@@ -1,0 +1,135 @@
+
+{% if form.errors %}
+    <div class="alert alert-danger">
+    Please correct the problem in the form below.
+    </div>
+{% endif %}
+
+
+{% if action == 'edit' %}
+    {% url 'archive:edit_resource' id=resource.id as post_url %}
+{% else %}
+    {% url 'archive:new_resource' container=container.id as post_url %}
+{% endif %}
+
+
+<form id="loginForm" method="POST" action="{{post_url}}" novalidate="novalidate">
+    {% csrf_token %}
+    <div class="form-group {% if form.errors.name %}has-error{% endif %}">
+        <label for="name" class="control-label">Name</label>
+        <input type="text" class="form-control" id="name" name="name" value="{{form.name.value|default:''}}"  title="Enter the resource name" placeholder="Name of resource">
+    </div>
+
+    <div class="well">
+    <h2 style="text-align: center;">TODO: Upload details</h2>
+    </div>
+
+    <div class="row">&nbsp;</div>
+    <div class="row">
+        <div class="col-md-3">
+            <strong>Read permission</strong>
+            <div class="checkbox">
+                {{form.read_access}}
+            </div>
+        </div>
+        <div class="col-md-3 left-border">
+            <strong>Write permission</strong>
+            <div class="checkbox">
+                {{form.write_access}}
+            </div>
+        </div>
+        <div class="col-md-3 left-border">
+            <strong>Edit permission</strong>
+            <div class="checkbox">
+                {{form.edit_access}}
+            </div>
+        </div>
+        <div class="col-md-3 left-border">
+            <strong>Delete permission</strong>
+            <div class="checkbox">
+            {{ form.delete_access }}
+            </div>
+        </div>
+    </div>
+    <h4>Metadata</h4>
+    {{form.metadata}}
+
+    <button type="submit" class="btn btn-success btn-block">Save</button>
+</form>
+
+<script type="text/javascript">
+$(document).ready(function(){
+    $('#name').focus();
+
+    var mf_fields_count = $("#metadata_fields .form-group").size()
+
+    function setminus_visibile_on_first_row() {
+        var first = $("#metadata_fields .form-group").get(0);
+        var btn = $(first).find(".btn-danger");
+
+        console.log(mf_fields_count.toString());
+        if (mf_fields_count <= 1) {
+            btn.hide();
+        } else {
+            btn.show();
+        }
+
+    }
+
+    function clone_and_clean(element) {
+        var obj = element.clone()
+
+        var inputs = $(obj).find("input");
+        inputs.each(function(idx, input){
+            $(this).val("");
+        });
+
+
+        return obj;
+    }
+
+    function prep(container, index, value) {
+        var minus = $(container).find('.btn-danger');
+        var plus  = $(container).find('.btn-success');
+
+        minus.click(function(){
+            $(container).remove();
+            mf_fields_count -= 1;
+            setminus_visibile_on_first_row();
+        });
+
+        plus.click(function(){
+            var newrow = clone_and_clean($(container));
+            newrow.appendTo($(container).parent());
+
+            mf_fields_count += 1;
+            prep(newrow, mf_fields_count-1, "" );
+            setminus_visibile_on_first_row();
+        });
+
+        if(index == 0) {
+            minus.hide();
+        } else {
+            minus.show();
+        }
+    }
+
+
+    $("#metadata_fields .form-group").each(function(index, value){
+        var that = $(this);
+        prep(that, index, value);
+    });
+});
+</script>
+
+<style>
+#id_read_access li   { list-style: none; margin-left: -30px; }
+#id_write_access li  { list-style: none; margin-left: -30px; }
+#id_edit_access li   { list-style: none; margin-left: -30px; }
+#id_delete_access li { list-style: none; margin-left: -30px; }
+#id_read_access   { margin-top: 10px; }
+#id_write_access  { margin-top: 10px; }
+#id_edit_access   { margin-top: 10px; }
+#id_delete_access { margin-top: 10px; }
+.left-border { border-left: solid 1px #eee; }
+</style>

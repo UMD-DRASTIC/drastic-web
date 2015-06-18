@@ -11,9 +11,10 @@ from django.contrib import messages
 
 
 from archive.client import get_default_client
-from archive.forms import CollectionForm
+from archive.forms import CollectionForm, ResourceForm
 from users.authentication import administrator_required
 
+from indigo.models.resource import Resource
 from indigo.models.collection import Collection
 from indigo.models.group import Group
 from indigo.models.search import SearchIndex
@@ -29,39 +30,145 @@ def home(request):
 ##############################################################################
 
 @login_required()
-def resource_view(request, path):
-    ctx = {"resource": {"id": id, "name": "A test name", "collection":{"name": "data"}}}
+def resource_view(request, id):
 
-    client     = get_default_client()
-    resource   = client.get_resource_info("/" + path)
+    resource = Resource.find_by_id(id)
+    if not resource:
+        raise Http404();
 
-    #if not resource.user_can(request.user, "read"):
-    #    return HttpResponseForbidden()
+    if not resource.user_can(request.user, "read"):
+        return HttpResponseForbidden()
 
-    # Strip the leading / from the parent url
-    if resource['parentURI'].startswith("/"):
-        resource['parentURI'] = resource['parentURI'][1:]
-    if resource['parentURI'] and not resource['parentURI'].endswith("/"):
-        resource['parentURI'] = resource['parentURI'] + "/"
-    resource['name'] = path.split('/')[-1]
-    resource['path'] = path
-    return render(request, 'archive/resource/view.html', {"resource": resource})
+    container = Collection.find_by_id(resource.container)
+
+    ctx = {
+        "resource": resource.to_dict(request.user),
+        "container": container
+    }
+    return render(request, 'archive/resource/view.html', ctx)
 
 @login_required
 def new_resource(request, container):
-    # Requires write on container
     # Inherits perms from container by default.
-    pass
+    container = Collection.find_by_id(container)
+    if not container:
+        raise Http404()
+
+    # User must be able to write to this collection
+    if not container.user_can(request.user, "write"):
+        return HttpResponseForbidden()
+
+    initial = {
+        'metadata':'{"":""}',
+        'read_access': container.read_access,
+        'write_access': container.write_access,
+        'edit_access': container.edit_access,
+        'delete_access': container.delete_access,
+    }
+
+    form = ResourceForm(request.POST or None, initial=initial )
+    if request.method == 'POST':
+        if form.is_valid():
+            data = form.cleaned_data
+            try:
+                name = data['name']
+                metadata = {}
+                for k, v in json.loads(data['metadata']):
+                    metadata[k] = v
+                resource = Resource.create(name=name,
+                                           container=container.id,
+                                           metadata=metadata,
+                                           read_access=data['read_access'],
+                                           write_access=data['write_access'],
+                                           delete_access=data['delete_access'],
+                                           edit_access=data['edit_access'])
+                SearchIndex.index(resource, ['name', 'metadata'])
+                messages.add_message(request, messages.INFO,
+                                     u"New resource '{}' created" .format(resource.name))
+            except UniqueException:
+                messages.add_message(request, messages.ERROR,
+                                     "That name is in use within the current collection")
+
+
+            return redirect('archive:view', path=container.path)
+
+    ctx = {
+        "form": form,
+        "container": container,
+        "groups": Group.objects.all()
+    }
+    return render(request, 'archive/resource/new.html', ctx)
 
 @login_required
 def edit_resource(request, id):
     # Requires edit on resource
-    pass
+    resource = Resource.find_by_id(id)
+    if not resource:
+        raise Http404()
+
+    container = Collection.find_by_id(resource.container)
+    if not container:
+        raise Http404()
+
+    if not resource.user_can(request.user, "edit"):
+        return HttpResponseForbidden()
+
+    if request.method == "POST":
+        form = ResourceForm(request.POST)
+        if form.is_valid():
+            # TODO: Check for duplicates
+            metadata = {}
+            for k, v in json.loads(form.cleaned_data['metadata']):
+                metadata[k] = v
+
+            try:
+                data = form.cleaned_data
+                resource.update(name=data['name'],
+                            metadata=metadata,
+                            read_access=data['read_access'],
+                            write_access=data['write_access'],
+                            delete_access=data['delete_access'],
+                            edit_access=data['edit_access'])
+
+                SearchIndex.reset(resource.id)
+                SearchIndex.index(resource, ['name', 'metadata'])
+
+                return redirect('archive:resource_view', id=resource.id)
+            except UniqueException:
+                messages.add_message(request, messages.ERROR,
+                                     "That name is in use withinin the current collection")
+    else:
+        metadata = json.dumps(resource.metadata)
+        if not resource.metadata:
+            metadata = '{"":""}'
+
+        initial_data = {'name':resource.name, 'metadata': metadata,
+            'read_access': resource.read_access,
+            'write_access': resource.write_access,
+            'edit_access': resource.edit_access,
+            'delete_access': resource.delete_access}
+        form = ResourceForm(initial=initial_data)
+
+
+    ctx = {
+        "form": form,
+        "resource": resource,
+        "container": container,
+        "groups": Group.objects.all()
+    }
+
+    return render(request, 'archive/resource/edit.html', ctx)
 
 @login_required
 def delete_resource(request, id):
     # Requires delete on resource
-    pass
+    ctx = {
+        "resource": "",
+        "container": "",
+    }
+
+    return render(request, 'archive/resource/delete.html', ctx)
+
 
 ##############################################################################
 # Collection specific view functions
@@ -95,9 +202,19 @@ def navigate(request, path):
             res.append(coll)
         return res
 
+    def child_resources():
+        result = []
+        for resource in collection.get_child_resources():
+            if not resource.user_can(request.user, "read"):
+                continue
+            result.append(resource)
+        return result
+
+
     ctx = {
         'collection': collection.to_dict(request.user),
         'child_collections': [c.to_dict(request.user) for c in child_collections()],
+        'child_resources': [r.to_dict(request.user) for r in child_resources()],
         'collection_paths': paths
     }
 
