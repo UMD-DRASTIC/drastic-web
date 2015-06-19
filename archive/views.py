@@ -4,7 +4,8 @@ import requests
 
 from django.conf import settings
 from django.http import (StreamingHttpResponse, HttpResponse,
-                         Http404, HttpResponseForbidden)
+                         Http404)
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -37,7 +38,7 @@ def resource_view(request, id):
         raise Http404();
 
     if not resource.user_can(request.user, "read"):
-        return HttpResponseForbidden()
+        raise PermissionDenied
 
     container = Collection.find_by_id(resource.container)
 
@@ -56,7 +57,7 @@ def new_resource(request, container):
 
     # User must be able to write to this collection
     if not container.user_can(request.user, "write"):
-        return HttpResponseForbidden()
+        raise PermissionDenied
 
     initial = {
         'metadata':'{"":""}',
@@ -111,7 +112,7 @@ def edit_resource(request, id):
         raise Http404()
 
     if not resource.user_can(request.user, "edit"):
-        return HttpResponseForbidden()
+        raise PermissionDenied
 
     if request.method == "POST":
         form = ResourceForm(request.POST)
@@ -184,7 +185,9 @@ def navigate(request, path):
         raise Http404()
 
     if not collection.user_can(request.user, "read"):
-        return HttpResponseForbidden()
+        # If the user can't read, then return 404 rather than 403 so that
+        # we don't leak information.
+        raise Http404()
 
     paths = []
     full = ""
@@ -244,7 +247,7 @@ def new_collection(request, parent):
         parent_collection = Collection.find_by_id(parent)
 
     if not parent_collection.user_can(request.user, "write"):
-        return HttpResponseForbidden()
+        raise PermissionDenied
 
     form = CollectionForm(request.POST or None, initial={'metadata':'{"":""}'})
     if request.method == 'POST':
@@ -279,7 +282,7 @@ def edit_collection(request, id):
     coll = Collection.find_by_id(id)
 
     if not coll.user_can(request.user, "edit"):
-        return HttpResponseForbidden()
+        raise PermissionDenied
 
     if request.method == "POST":
         form = CollectionForm(request.POST)
@@ -326,7 +329,7 @@ def delete_collection(request, id):
     coll = Collection.find_by_id(id)
 
     if not coll.user_can(request.user, "delete"):
-        return HttpResponseForbidden()
+        raise PermissionDenied
 
     if request.method == "POST":
         SearchIndex.reset(coll.id)

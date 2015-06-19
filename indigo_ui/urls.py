@@ -14,12 +14,9 @@ urlpatterns = [
     url(r'^about$', TemplateView.as_view(template_name='about.html'), name='about'),
     url(r'^contact$', TemplateView.as_view(template_name='contact.html'), name='contact'),
 
-    #url(r'^accounts/forgot/', TemplateView.as_view(template_name="registration/forgotten_password.html"), name="forgot"),
-    #url(r'^accounts/', include('registration.backends.default.urls')),
-
     # All routes from here are to be re-routed to the agent by using
     # nginx to re-route calls as an internal redirect
-    # url(r'^cdmi/', include('router.urls')),
+    # url(r'^cdmi/', include('cdmi.urls')),
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
