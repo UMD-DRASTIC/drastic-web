@@ -18,8 +18,9 @@
 </div>
 {% endif %}
 
-<span style="display:none;">Hit count: {{ c.hit_count }}</span>
-
-
+{# Hidden fields are showing debug information from search results #}
+<span style="display:none;">
+    <span>Hit count: {{ c.hit_count }}</span>
+</span>
 <hr/>
 
