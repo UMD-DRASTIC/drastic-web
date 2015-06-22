@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load ui_tags %}
+{% block title %}Node metrics{% endblock title %}
+
+{% block sidebar %}
+    {% include "snippets/sidenav.html" with active="nodes" %}
+{% endblock sidebar %}
+
+
+{% block main_content %}
+
+<h2>Node - {{ node.name }}</h2>
+<hr/>
+
+{{metrics}}
+{% for storage,data in metrics.storage.iteritems %}
+    <div class="row">
+    <h3>{{storage|title}}</h3>
+
+    <div class="progress">
+      <div class="progress-bar progress-bar-danger" role="progressbar" aria-valuenow="{% percentage data.total data.used %}" aria-valuemin="0" aria-valuemax="100" style="width: {% percentage data.total data.used %}%;">
+        {% percentage data.total data.used %}%
+      </div>
+    </div>
+
+    </div>
+{% endfor %}
+
+
+{% endblock main_content %}

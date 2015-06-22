@@ -1,6 +1,7 @@
 import uuid
 import datetime
 
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import render
 from django.core.urlresolvers  import reverse
 from django.http import HttpResponseRedirect
@@ -59,15 +60,29 @@ def edit(request, id):
 def check(request, id):
     node = Node.find_by_id(id)
 
-    client = NodeClient(node.address)
+    client = NodeClient(node.address + ":9000")
     ok, metrics = client.get_state()
     if ok:
+        node.update(status="UP", last_update=datetime.datetime.now())
         messages.add_message(request, messages.INFO, 'The node was reachable')
     else:
         messages.add_message(request, messages.WARNING, 'The node at {} was unreachable'.format(node.address))
         node.update(status="DOWN", last_update=datetime.datetime.now())
     return HttpResponseRedirect(reverse("nodes:home"))
 
+
+@login_required
+def metrics(request, id):
+    node = Node.find_by_id(id)
+    if not node or not request.user.administrator:
+        raise PermissionDenied()
+
+    client = NodeClient(node.address + ":9000")
+    ok, metrics = client.get_state()
+    if not ok:
+        messages.add_message(request, messages.WARNING, 'The node at {} was unreachable'.format(node.address))
+
+    return render(request, 'nodes/metrics.html', { "node": node, "metrics": metrics})
 
 @login_required
 def logview(request, id):

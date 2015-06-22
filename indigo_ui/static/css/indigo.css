@@ -1,4 +1,12 @@
 
+.progress {
+    height: 24px;
+}
+.progress-bar {
+    line-height: 24px !important;
+    font-weight: bold;
+    font-size: 1.4em !important;
+}
 
 .user-tab {
     margin: 0px;

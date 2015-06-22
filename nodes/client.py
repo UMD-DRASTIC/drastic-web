@@ -23,8 +23,8 @@ class NodeClient(object):
         """
         data = {}
         try:
-            data = requests.get('http://{}/api/status'.format(self.address), timeout=0.2)
+            data = requests.get('http://{}/'.format(self.address), timeout=0.2)
         except:
             return False, {}
 
-        return True, data
+        return True, data.json()

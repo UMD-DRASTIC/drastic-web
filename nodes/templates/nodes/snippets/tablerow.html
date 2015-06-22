@@ -15,7 +15,8 @@
        {% include "nodes/snippets/status.html" with status=node.status %}
     </td>
     <td>
-        ....
+        &nbsp;&nbsp;
+        <a href="{% url 'nodes:metrics' id=node.id%}"><i class="glyphicon glyphicon-eye-open"></i></a>
     </td>
     <td>
         <span class="pull-right">
