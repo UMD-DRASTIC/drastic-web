@@ -1,16 +1,37 @@
 
 <div class="resource-entry">
 
+  <div class="row">
 
-  <a href="{% url 'archive:resource_view' id=resource.id %}">
-    <i class="label label-info">{{resource.type|default:"Unknown"}}</i>&nbsp;
-    {{ resource.name }}
-  </a>
+      {% if resource.can_read %}
+      <a href="{% url 'archive:resource_view' id=resource.id %}">
+        <i class="label label-info">{{resource.type|default:"Unknown"}}</i>&nbsp;
+        {{ resource.name }}
+      </a>
+      {% else %}
+        <span style="color: #999">
+         <i class="label label-default">{{resource.type|default:"Unknown"}}</i>&nbsp;
+        {{ resource.name }}
+        </span>
+      {% endif %}
 
-  <a class="pull-right" href="{% url 'archive:download' path=resource.path%}" >
-  Download  <i class="glyphicon glyphicon-download-alt"></i>
-  </a>
+      {% if resource.can_read %}
+      <a class="pull-right" href="{% url 'archive:download' path=resource.path%}" >
+      Download  <i class="glyphicon glyphicon-download-alt"></i>
+      </a>
+      {% endif %}
+  </div>
 
+  {% if resource.metadata %}
+  <div class="row">
+  {% for m in resource.metadata %}
+    <span class="label label-{% if not resource.can_read %}default{% else %}success{% endif %}">
+    {{ m.0 }} = {{ m.1 }}
+    </span>&nbsp;&nbsp;
+
+  {% endfor %}
+  </div>
+  {% endif %}
 </div>
 <hr/>
 

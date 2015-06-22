@@ -20,9 +20,7 @@
     {% endif %}
 </h3>
 {% for c in child_collections %}
-  {% if c.can_read %}
     {% include "archive/snippets/collection_entry.html" with collection=c %}
-  {% endif %}
 {% empty %}
     This collection has no sub-collections
 {% endfor %}

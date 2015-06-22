@@ -178,13 +178,13 @@ def delete_resource(request, id):
 @login_required()
 def navigate(request, path):
 
-    client     = get_default_client()
+    #client     = get_default_client()
     collection = Collection.find_by_path(path or '/')
 
     if not collection:
         raise Http404()
 
-    if not collection.user_can(request.user, "read"):
+    if not collection.user_can(request.user, "read") and not collection.is_root:
         # If the user can't read, then return 404 rather than 403 so that
         # we don't leak information.
         raise Http404()
@@ -198,20 +198,18 @@ def navigate(request, path):
         paths.append( (p,full,) )
 
     def child_collections():
-        res = []
-        for coll in collection.get_child_collections():
-            if not collection.user_can(request.user, "read"):
-                continue
-            res.append(coll)
-        return res
+        return collection.get_child_collections()
 
     def child_resources():
+        """
         result = []
         for resource in collection.get_child_resources():
             if not resource.user_can(request.user, "read"):
                 continue
             result.append(resource)
         return result
+        """
+        return collection.get_child_resources()
 
 
     ctx = {
@@ -249,7 +247,14 @@ def new_collection(request, parent):
     if not parent_collection.user_can(request.user, "write"):
         raise PermissionDenied
 
-    form = CollectionForm(request.POST or None, initial={'metadata':'{"":""}'})
+    initial = {
+        'metadata': '{"":""}',
+        "read_access": parent_collection.read_access,
+        "write_access": parent_collection.write_access,
+        "edit_access": parent_collection.edit_access,
+        "delete_access": parent_collection.delete_access,
+    }
+    form = CollectionForm(request.POST or None, initial=initial)
     if request.method == 'POST':
         if form.is_valid():
             data = form.cleaned_data
