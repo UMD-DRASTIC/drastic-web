@@ -17,8 +17,8 @@
 {% for storage,data in metrics.storage.iteritems %}
     <h3>{{storage|title}}</h3>
     <div class="progress">
-      <div class="progress-bar progress-bar-{% percentage_color data.total data.used %}" role="progressbar" aria-valuenow="{% percentage data.total data.used %}" aria-valuemin="0" aria-valuemax="100" style="width: {% percentage data.total data.used %}%;">
-        {% percentage data.total data.used %}%
+      <div class="progress-bar progress-bar-{% percentage_color data.total data.used %}" role="progressbar" aria-valuenow="{% percentage data.total data.used %}" aria-valuemin="0" aria-valuemax="100" style="width: {{ data.percent_used }}%;">
+        {{ data.percent_used }}%
       </div>
     </div>
     <table class="table table-striped">
@@ -33,6 +33,12 @@
             <td>{{data.resource_count}}</td>
             <th>Average resource size</th>
             <td>{{data.avg_size}}</td>
+        </tr>
+        <tr>
+            <th></th>
+            <td></td>
+            <th>Max resource size</th>
+            <td>{{data.max_size}}</td>
         </tr>
     </table>
     <hr/>
