@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load ui_tags %}
+{% load humanize %}
 {% block title %}Node metrics{% endblock title %}
 
 {% block sidebar %}
@@ -24,21 +25,21 @@
     <table class="table table-striped">
         <tr>
             <th>Total available</th>
-            <td>{{data.total}}
+            <td>{{ data.total|intcomma }}
             <th>Total used</th>
-            <td>{{data.used}}</td>
+            <td>{{ data.used|intcomma }}</td>
         </tr>
         <tr>
             <th># of resources</th>
-            <td>{{data.resource_count}}</td>
+            <td>{{ data.resource_count|intcomma }}</td>
             <th>Average resource size</th>
-            <td>{{data.avg_size}}</td>
+            <td>{{ data.avg_size|intcomma }}</td>
         </tr>
         <tr>
-            <th></th>
-            <td></td>
+            <th>Min resource size</th>
+            <td>{{ data.min_size|intcomma }}</td>
             <th>Max resource size</th>
-            <td>{{data.max_size}}</td>
+            <td>{{ data.max_size|intcomma }}</td>
         </tr>
     </table>
     <hr/>
