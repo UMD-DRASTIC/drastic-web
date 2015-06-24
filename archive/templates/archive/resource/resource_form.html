@@ -5,6 +5,7 @@
     </div>
 {% endif %}
 
+{{form.errors}}
 
 {% if action == 'edit' %}
     {% url 'archive:edit_resource' id=resource.id as post_url %}
@@ -13,15 +14,15 @@
 {% endif %}
 
 
-<form id="loginForm" method="POST" action="{{post_url}}" novalidate="novalidate">
+<form id="loginForm" method="POST" action="{{post_url}}" novalidate="novalidate" enctype="multipart/form-data">
     {% csrf_token %}
     <div class="form-group {% if form.errors.name %}has-error{% endif %}">
         <label for="name" class="control-label">Name</label>
         <input type="text" class="form-control" id="name" name="name" value="{{form.name.value|default:''}}"  title="Enter the resource name" placeholder="Name of resource">
     </div>
 
-    <div class="well">
-    <h2 style="text-align: center;">TODO: Upload details</h2>
+    <div class="well form-group {% if form.errors.file %}has-error{% endif %}">
+        <input type="file" name="file">
     </div>
 
     <div class="row">&nbsp;</div>
@@ -51,6 +52,7 @@
             </div>
         </div>
     </div>
+
     <h4>Metadata</h4>
     {{form.metadata}}
 

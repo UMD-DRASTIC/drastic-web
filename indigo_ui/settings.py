@@ -49,6 +49,7 @@ DEFAULT_APP_CONFIG = 'indigo_ui.IndigoAppConfig'
 
 SITE_ID = 1
 
+FILE_UPLOAD_HANDLERS = ("archive.uploader.AgentUploader",)
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -57,7 +58,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    #'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'users.middleware.CassandraAuth'
 )

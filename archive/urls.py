@@ -14,5 +14,5 @@ urlpatterns = [
     url(r'^delete/resource/(?P<id>.*)$', 'archive.views.delete_resource', name='delete_resource'),
 
     url(r'^view(?P<path>.*)$', 'archive.views.navigate', name='view'),
-    url(r'^download/(?P<path>.*)$', 'archive.views.download', name='download'),
+    url(r'^download/(?P<id>.*)$', 'archive.views.download', name='download'),
 ]

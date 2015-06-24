@@ -21,7 +21,7 @@
         <a class="btn btn-danger" href='{% url "archive:delete_resource" id=resource.id %}'>Delete Resource</a>
         {% endif %}
 
-        <a class="btn btn-success pull-right" href="{% url 'archive:download' path=resource.path %}">Download resource</a>
+        <a class="btn btn-success pull-right" href="{% url 'archive:download' id=resource.id %}">Download resource</a>
 
         <div class="clearfix"></div>
     </div>
@@ -52,7 +52,7 @@
         </tr>
         <tr>
             <th>Size (in bytes)</th>
-            <td>{{resource.metadata.cdmi_size|default:"Not set"}}</td>
+            <td>{{resource.size|default:"Not set"}}</td>
         </tr>
         <tr>
             <th>Collection</th>

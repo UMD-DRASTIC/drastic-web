@@ -48,10 +48,14 @@ class JsonPairInputs(Widget):
         attrs (dict) -- automatically passed in by django (unused in this function)
         """
 
-        if value is None or value.strip() is '': value = '{}'
+        if (not value) or value.strip() is '': value = '{"":""}'
         twotuple = json.loads(force_unicode(value))
+
         if isinstance(twotuple, dict):
             twotuple = [(k,v,) for k,v in twotuple.iteritems()]
+        if not twotuple:
+            twotuple = [("","")]
+
         ret = ''
         if value and len(value) > 0:
             for k, v in twotuple:
@@ -96,6 +100,7 @@ class JsonPairInputs(Widget):
         name  (str)   -- the name of the field associated with this widget
 
         """
+        jsontext = ""
         if data.has_key('json_key[%s]' % name) and data.has_key('json_value[%s]' % name):
             keys     = data.getlist("json_key[%s]" % name)
             values   = data.getlist("json_value[%s]" % name)

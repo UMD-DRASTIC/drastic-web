@@ -26,6 +26,9 @@ from indigo.models.errors import UniqueException
 def home(request):
     return redirect('archive:view', path='')
 
+def notify_agent(blob_id, event=""):
+    pass
+
 ##############################################################################
 # Collection specific view functions
 ##############################################################################
@@ -67,11 +70,15 @@ def new_resource(request, container):
         'delete_access': container.delete_access,
     }
 
-    form = ResourceForm(request.POST or None, initial=initial )
+
     if request.method == 'POST':
+        form = ResourceForm(request.POST, files=request.FILES, initial=initial )
         if form.is_valid():
             data = form.cleaned_data
             try:
+                blob_id = data['file'].read()
+                url = "cassandra://{}".format(blob_id)
+
                 name = data['name']
                 metadata = {}
                 for k, v in json.loads(data['metadata']):
@@ -82,7 +89,11 @@ def new_resource(request, container):
                                            read_access=data['read_access'],
                                            write_access=data['write_access'],
                                            delete_access=data['delete_access'],
-                                           edit_access=data['edit_access'])
+                                           edit_access=data['edit_access'],
+                                           url=url,
+                                           size=data['file'].size,
+                                           mimetype=data['file'].content_type)
+                notify_agent(blob_id, "resource:new")
                 SearchIndex.index(resource, ['name', 'metadata'])
                 messages.add_message(request, messages.INFO,
                                      u"New resource '{}' created" .format(resource.name))
@@ -90,8 +101,9 @@ def new_resource(request, container):
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use within the current collection")
 
-
             return redirect('archive:view', path=container.path)
+    else:
+        form = ResourceForm( initial=initial )
 
     ctx = {
         "form": form,
@@ -115,7 +127,7 @@ def edit_resource(request, id):
         raise PermissionDenied
 
     if request.method == "POST":
-        form = ResourceForm(request.POST)
+        form = ResourceForm(request.POST, files=request.FILES)
         if form.is_valid():
             # TODO: Check for duplicates
             metadata = {}
@@ -124,13 +136,21 @@ def edit_resource(request, id):
 
             try:
                 data = form.cleaned_data
+
+                blob_id = data['file'].read()
+                url = "cassandra://{}".format(blob_id)
+
                 resource.update(name=data['name'],
                             metadata=metadata,
                             read_access=data['read_access'],
                             write_access=data['write_access'],
                             delete_access=data['delete_access'],
-                            edit_access=data['edit_access'])
+                            edit_access=data['edit_access'],
+                            url=url,
+                            size=data['file'].size,
+                            mimetype=data['file'].content_type )
 
+                notify_agent(blob_id, "resource:edit")
                 SearchIndex.reset(resource.id)
                 SearchIndex.index(resource, ['name', 'metadata'])
 
@@ -162,12 +182,25 @@ def edit_resource(request, id):
 
 @login_required
 def delete_resource(request, id):
+    resource = Resource.find_by_id(id)
+    if not resource:
+        raise Http404
+
+    if not resource.user_can(request.user, "delete"):
+        raise PermissionDenied
+
+    # TODO: Make sure the GET request warns the user and then the
+    # POST request can actually delete the resource.
+
+    # TODO: Make resource deletion a soft delete.
+
     # Requires delete on resource
     ctx = {
         "resource": "",
         "container": "",
     }
 
+    notify_agent(blob_id, "resource:delete")
     return render(request, 'archive/resource/delete.html', ctx)
 
 
@@ -296,10 +329,8 @@ def edit_collection(request, id):
             metadata = {}
             for k, v in json.loads(form.cleaned_data['metadata']):
                 metadata[k] = v
-
             try:
                 data = form.cleaned_data
-                print data
                 coll.update(name=data['name'],
                             metadata=metadata,
                             read_access=data['read_access'],
@@ -347,38 +378,31 @@ def delete_collection(request, id):
 
 
 @login_required
-def download(request, path):
+def download(request, id):
     """
     Requests for download are redirected to the agent via the agent,
     but for debugging the requests are served directly.
 
     We will send appropriate user auth to the agent.
     """
+    from indigo.models.blob import Blob, BlobPart
 
-    # Permission checks
+    resource = Resource.find_by_id(id)
+    if not resource:
+        raise Http404
 
-    client     = get_default_client()
-    resource   = client.get_resource_info("/" + path)
+    if not resource.user_can(request.user, "read"):
+        raise PermissionDenied
 
-    # We have size and mimetype from the resource info, then we want to
-    # either:
-    #   - Redirect to the appropriate agent URL
-    #   - Stream the response ourselves, but only in debug
+    def get_content(url):
+        if url.startswith('cassandra://'):
+            blob = Blob.find(url[len('cassandra://'):])
+            for part_id in blob.parts:
+                part = BlobPart.find(part_id)
+                yield part.content
 
-    def get_content_debug():
-        yield client.get_resource_content("/" + path)
+    resp = StreamingHttpResponse(streaming_content=get_content(resource.url),
+                                 content_type=resource.mimetype)
+    resp['Content-Disposition'] = 'attachment; filename="{}"'.format(resource.name)
 
-    if settings.DEBUG:
-        resp = StreamingHttpResponse(streaming_content=get_content_debug(),
-                                     content_type=resource.get('mimetype', 'application/octect-stream'))
-        resp['Content-Disposition'] = 'attachment; filename="{}"'.format(path.split('/')[-1])
-
-        return resp
-
-    # TODO: Set the response in such a way that nginx can correctly redirect to the agent to do
-    # the appropriate work of returning the file.
-
-    return ""
-
-
-
+    return resp

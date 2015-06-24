@@ -16,7 +16,7 @@
       {% endif %}
 
       {% if resource.can_read %}
-      <a class="pull-right" href="{% url 'archive:download' path=resource.path%}" >
+      <a class="pull-right" href="{% url 'archive:download' id=resource.id%}" >
       Download  <i class="glyphicon glyphicon-download-alt"></i>
       </a>
       {% endif %}
