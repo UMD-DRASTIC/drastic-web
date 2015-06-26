@@ -15,8 +15,9 @@ class AgentUploader(FileUploadHandler):
         """
         self.file_name = file_name
         self.blob = Blob.create()
+        self.content_type = content_type
+        #self.charset = charset
 
-        # Create a new Blob object and store it against this class
         raise StopFutureHandlers()
 
     def receive_data_chunk(self, raw_data, start):
@@ -43,7 +44,10 @@ class AgentUploader(FileUploadHandler):
         print u"File upload complete with {} bytes".format(file_size)
         self.blob.update(size=file_size)
 
-        uploaded = CassandraUploadedFile(name=str(self.file_name), content=str(self.blob.id), length=file_size)
+        uploaded = CassandraUploadedFile(name=str(self.file_name),
+                                         content=str(self.blob.id),
+                                         content_type=self.content_type,
+                                         length=file_size)
         return uploaded
 
 
@@ -53,7 +57,7 @@ class CassandraUploadedFile(InMemoryUploadedFile):
     In this particular case we are just storing the blob ID as content rather than
     the actual content.
     """
-    def __init__(self, name, content, length):
+    def __init__(self, name, content, content_type, length):
         super(CassandraUploadedFile, self).__init__(BytesIO(content), None, name,
-                                                 'application/octet-stream', length, None, None)
+                                                 content_type, length, None, None)
 

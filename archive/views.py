@@ -22,6 +22,13 @@ from indigo.models.search import SearchIndex
 from indigo.models.errors import UniqueException
 
 
+# TODO: Move this to a helper
+def get_extension(name):
+    _, ext = os.path.splitext(name)
+    if ext:
+        return ext[1:].upper()
+    return "UNKNOWN"
+
 @login_required()
 def home(request):
     return redirect('archive:view', path='')
@@ -92,7 +99,10 @@ def new_resource(request, container):
                                            edit_access=data['edit_access'],
                                            url=url,
                                            size=data['file'].size,
-                                           mimetype=data['file'].content_type)
+                                           mimetype=data['file'].content_type,
+                                           file_name=data['file'].name,
+                                           type=get_extension(data['file'].name))
+
                 notify_agent(blob_id, "resource:new")
                 SearchIndex.index(resource, ['name', 'metadata'])
                 messages.add_message(request, messages.INFO,
@@ -148,7 +158,9 @@ def edit_resource(request, id):
                             edit_access=data['edit_access'],
                             url=url,
                             size=data['file'].size,
-                            mimetype=data['file'].content_type )
+                            mimetype=data['file'].content_type,
+                            file_name=data['file'].name,
+                            type=get_extension(data['file'].name) )
 
                 notify_agent(blob_id, "resource:edit")
                 SearchIndex.reset(resource.id)
@@ -234,14 +246,6 @@ def navigate(request, path):
         return collection.get_child_collections()
 
     def child_resources():
-        """
-        result = []
-        for resource in collection.get_child_resources():
-            if not resource.user_can(request.user, "read"):
-                continue
-            result.append(resource)
-        return result
-        """
         return collection.get_child_resources()
 
 
@@ -403,6 +407,6 @@ def download(request, id):
 
     resp = StreamingHttpResponse(streaming_content=get_content(resource.url),
                                  content_type=resource.mimetype)
-    resp['Content-Disposition'] = 'attachment; filename="{}"'.format(resource.name)
+    resp['Content-Disposition'] = 'attachment; filename="{}"'.format(resource.file_name)
 
     return resp
