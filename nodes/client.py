@@ -7,10 +7,40 @@ indigo agents and interacting with them to:
 """
 import requests
 
+import logging
+logger = logging.getLogger("indigo")
+
+def choose_client():
+    """
+    Choose a client and return a NodeClient instance
+    """
+    # TODO: Only return active nodes
+    # TODO: Do not only return localhost
+    return NodeClient("127.0.0.1:9000")
+
+
 class NodeClient(object):
 
     def __init__(self, address):
         self.address = address
+
+    def notify(self, resource_id, event):
+        """
+        Passes the event and resource_id to the node so that it
+        can act on the event itself.
+        """
+        data = {
+            "resource": resource_id,
+            "event": event
+        }
+
+        try:
+            r = requests.post('http://{}/notify'.format(self.address), data=data, timeout=0.2)
+        except Exception, e:
+            logger.exception(e)
+            return False
+
+        return r.status_code == requests.codes.ok
 
     def get_state(self):
         """
@@ -24,7 +54,8 @@ class NodeClient(object):
         data = {}
         try:
             data = requests.get('http://{}/'.format(self.address), timeout=0.2)
-        except:
+        except Exception, e:
+            logger.exception(e)
             return False, {}
 
         return True, data.json()

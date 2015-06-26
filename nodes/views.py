@@ -14,6 +14,8 @@ from .client import NodeClient
 from indigo.models import Node
 from indigo.models.errors import UniqueException
 
+import logging
+logger = logging.getLogger("indigo")
 
 @login_required
 def home(request):

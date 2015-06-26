@@ -33,8 +33,10 @@ def get_extension(name):
 def home(request):
     return redirect('archive:view', path='')
 
-def notify_agent(blob_id, event=""):
-    pass
+def notify_agent(resource_id, event=""):
+    from nodes.client import choose_client
+    client = choose_client()
+    client.notify(resource_id, event)
 
 ##############################################################################
 # Collection specific view functions
@@ -103,7 +105,7 @@ def new_resource(request, container):
                                            file_name=data['file'].name,
                                            type=get_extension(data['file'].name))
 
-                notify_agent(blob_id, "resource:new")
+                notify_agent(resource.id, "resource:new")
                 SearchIndex.index(resource, ['name', 'metadata'])
                 messages.add_message(request, messages.INFO,
                                      u"New resource '{}' created" .format(resource.name))
@@ -162,7 +164,7 @@ def edit_resource(request, id):
                             file_name=data['file'].name,
                             type=get_extension(data['file'].name) )
 
-                notify_agent(blob_id, "resource:edit")
+                notify_agent(resource.id, "resource:edit")
                 SearchIndex.reset(resource.id)
                 SearchIndex.index(resource, ['name', 'metadata'])
 
@@ -212,7 +214,7 @@ def delete_resource(request, id):
         "container": "",
     }
 
-    notify_agent(blob_id, "resource:delete")
+    notify_agent(resource.id, "resource:delete")
     return render(request, 'archive/resource/delete.html', ctx)
 
 
