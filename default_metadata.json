@@ -1,0 +1,9 @@
+{
+    "collections": [
+        {
+            "name": "Group",
+            "required": true
+        }
+    ],
+    "resources": []
+}

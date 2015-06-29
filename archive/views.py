@@ -1,3 +1,4 @@
+import collections
 import json
 import os
 import requests
@@ -20,7 +21,7 @@ from indigo.models.collection import Collection
 from indigo.models.group import Group
 from indigo.models.search import SearchIndex
 from indigo.models.errors import UniqueException
-
+from indigo.metadata import get_resource_keys, get_collection_keys
 
 # TODO: Move this to a helper
 def get_extension(name):
@@ -71,8 +72,15 @@ def new_resource(request, container):
     if not container.user_can(request.user, "write"):
         raise PermissionDenied
 
+    keys = get_resource_keys()
+    mdata = collections.OrderedDict()
+    for k in keys:
+        mdata[k] = ""
+    if not mdata:
+        mdata[""] = ""
+
     initial = {
-        'metadata':'{"":""}',
+        'metadata': json.dumps(mdata),
         'read_access': container.read_access,
         'write_access': container.write_access,
         'edit_access': container.edit_access,
@@ -286,8 +294,16 @@ def new_collection(request, parent):
     if not parent_collection.user_can(request.user, "write"):
         raise PermissionDenied
 
+    keys = get_collection_keys()
+    mdata = collections.OrderedDict()
+    for k in keys:
+        mdata[k] = ""
+    if not mdata:
+        mdata[""] = ""
+
+
     initial = {
-        'metadata': '{"":""}',
+        'metadata': json.dumps(mdata),
         "read_access": parent_collection.read_access,
         "write_access": parent_collection.write_access,
         "edit_access": parent_collection.edit_access,
