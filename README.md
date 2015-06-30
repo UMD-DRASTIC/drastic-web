@@ -26,3 +26,10 @@ Because of a conflict between the Cassandra driver and Django, you *must* use ru
 ```
 ./manage.py runserver_plus
 ```
+
+
+## Required environment variables
+
+export CQLENG_ALLOW_SCHEMA_MANAGEMENT=1
+export INDIGO_SCHEMA=/path/to/schema.json
+export AGENT_CONFIG=/path/to/agentconfig

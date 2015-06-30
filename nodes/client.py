@@ -53,7 +53,7 @@ class NodeClient(object):
         """
         data = {}
         try:
-            data = requests.get('http://{}/'.format(self.address), timeout=0.2)
+            data = requests.get('http://{}/metrics'.format(self.address), timeout=0.2)
         except Exception, e:
             logger.exception(e)
             return False, {}
