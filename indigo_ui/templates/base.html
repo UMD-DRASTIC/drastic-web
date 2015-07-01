@@ -88,14 +88,11 @@
                     <span class="caret"></span>
                   </a>
                    <ul class="dropdown-menu" role="menu">
-                    <li><a href="{% url 'archive:home' %}">Archive</a></li>
-
                     {% if user.administrator %}
                     <li><a href="{% url 'nodes:home' %}">Nodes</a></li>
+                    <li><a href="{% url 'users:home' %}">Users</a></li>
                     {% endif %}
 
-                    <!-- TODO: If user is logged in -->
-                    <li><a href="{% url 'users:home' %}">Users</a></li>
                     <li><a href="{% url 'activity:home' %}">Activity</a></li>
                     <li class="divider"></li>
                     <li><a href="{% url 'users:auth_logout' %}">Logout</a></li>
