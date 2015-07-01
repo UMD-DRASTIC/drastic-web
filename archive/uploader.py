@@ -1,4 +1,5 @@
 from io import BytesIO
+import hashlib
 
 from django.core.files.uploadhandler import FileUploadHandler, StopFutureHandlers
 from django.core.files.uploadedfile import InMemoryUploadedFile
@@ -16,7 +17,7 @@ class AgentUploader(FileUploadHandler):
         self.file_name = file_name
         self.blob = Blob.create()
         self.content_type = content_type
-        #self.charset = charset
+        self.hasher = hashlib.sha256()
 
         raise StopFutureHandlers()
 
@@ -26,6 +27,9 @@ class AgentUploader(FileUploadHandler):
         last chunk).
         """
         print u"Received {} bytes".format(len(raw_data))
+
+        self.hasher.update(raw_data)
+
         part = BlobPart.create(blob_id=self.blob.id, content=raw_data)
         parts = self.blob.parts or []
         parts.append(part.id)
@@ -42,9 +46,9 @@ class AgentUploader(FileUploadHandler):
             we wrote to the DB.
         """
         print u"File upload complete with {} bytes".format(file_size)
-        self.blob.update(size=file_size)
+        self.blob.update(size=file_size, hash=self.hasher.hexdigest())
 
-        uploaded = CassandraUploadedFile(name=str(self.file_name),
+        uploaded = CassandraUploadedFile(name=self.file_name,
                                          content=str(self.blob.id),
                                          content_type=self.content_type,
                                          length=file_size)

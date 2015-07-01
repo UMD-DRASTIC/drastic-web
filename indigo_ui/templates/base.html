@@ -61,6 +61,14 @@
             {% endif %}>
               <a href="/">Home</a>
             </li>
+
+            {% if request.user.is_authenticated %}
+
+            <li {% if '/archive' in request.path %}class="active"{% endif %}>
+                <a href="{% url 'archive:home' %}">Archive</a>
+            </li>
+            {% endif %}
+
             <li {% if request.path == about %}class="active"
             {% endif %}>
               <a href="{% url 'about' %}">About</a>

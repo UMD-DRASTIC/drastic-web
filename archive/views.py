@@ -16,6 +16,7 @@ from archive.client import get_default_client
 from archive.forms import CollectionForm, ResourceForm
 from users.authentication import administrator_required
 
+from indigo.drivers import get_driver
 from indigo.models.resource import Resource
 from indigo.models.collection import Collection
 from indigo.models.group import Group
@@ -416,14 +417,10 @@ def download(request, id):
     if not resource.user_can(request.user, "read"):
         raise PermissionDenied
 
-    def get_content(url):
-        if url.startswith('cassandra://'):
-            blob = Blob.find(url[len('cassandra://'):])
-            for part_id in blob.parts:
-                part = BlobPart.find(part_id)
-                yield part.content
+    print resource.url
+    driver = get_driver(resource.url)
 
-    resp = StreamingHttpResponse(streaming_content=get_content(resource.url),
+    resp = StreamingHttpResponse(streaming_content=driver.chunk_content(),
                                  content_type=resource.mimetype)
     resp['Content-Disposition'] = 'attachment; filename="{}"'.format(resource.file_name)
 

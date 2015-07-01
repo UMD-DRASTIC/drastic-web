@@ -4,8 +4,8 @@
 
 {% block content %}
 
-
-<div class="jumbotron" style="margin-top: 80px;">
+<div class="container">
+<div style="margin-top: 80px; margin-bottom: 80px;">
 
     <div class="col-md-2">
         <img src="{% static 'img/indigo.png' %}"/>
@@ -15,14 +15,14 @@
     Some text about Indigo...
     </div>
 
-    <div class="pull-right col-md-2">
+    <div class="pull-right col-md-3">
         <a class="btn btn-primary" href="">Register</a>
         <a class="btn btn-success" href="{% url 'users:auth_login' %}">Login</a>
     </div>
 
     <div class="clearfix"></div>
 </div>
-
+<div class="container">
 <div class="row">
         <div class="col-md-4">
           <h2>Heading</h2>
@@ -40,5 +40,5 @@
           <p><a class="btn btn-default" href="#" role="button">View details »</a></p>
         </div>
       </div>
-
+</div>
 {% endblock content %}
