@@ -10,6 +10,11 @@
 {% block main_content %}
 
 <h2>Recent Activity</h2>
-<hr/>
+
+{% for a in activities %}
+    <div class="activity-item">
+    {{a.html|safe}}
+    </div>
+{% endfor %}
 
 {% endblock main_content %}

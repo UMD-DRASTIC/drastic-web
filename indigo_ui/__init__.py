@@ -1,0 +1,1 @@
+default_app_config = 'indigo_ui.apps.IndigoAppConfig'

@@ -50,3 +50,17 @@ ul.nav-sidebar {
     color: #E54D42;
 }
 
+
+.activity-item {
+    margin: 10px;
+    padding: 20px;
+    background-color: #eee;
+}
+
+.activity-timespan {
+    float: right;
+}
+
+.activity-message {
+    margin-left: 20px;
+}

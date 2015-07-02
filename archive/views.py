@@ -16,6 +16,11 @@ from archive.client import get_default_client
 from archive.forms import CollectionForm, ResourceForm
 from users.authentication import administrator_required
 
+from activity.signals import (new_resource_signal,
+                              new_collection_signal,
+                              edited_resource_signal,
+                              edited_collection_signal)
+
 from indigo.drivers import get_driver
 from indigo.models.resource import Resource
 from indigo.models.collection import Collection
@@ -118,6 +123,8 @@ def new_resource(request, container):
                 SearchIndex.index(resource, ['name', 'metadata'])
                 messages.add_message(request, messages.INFO,
                                      u"New resource '{}' created" .format(resource.name))
+
+                new_resource_signal.send(None, user=request.user, resource=resource)
             except UniqueException:
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use within the current collection")
@@ -176,6 +183,8 @@ def edit_resource(request, id):
                 notify_agent(resource.id, "resource:edit")
                 SearchIndex.reset(resource.id)
                 SearchIndex.index(resource, ['name', 'metadata'])
+
+                edited_resource_signal.send(None, user=request.user, resource=resource)
 
                 return redirect('archive:resource_view', id=resource.id)
             except UniqueException:
@@ -330,6 +339,8 @@ def new_collection(request, parent):
                 SearchIndex.index(collection, ['name', 'metadata'])
                 messages.add_message(request, messages.INFO,
                                      u"New collection '{}' created" .format(collection.name))
+
+                new_collection_signal.send(None, user=request.user, collection=collection)
                 return redirect('archive:view', path=collection.path)
             except UniqueException:
                 messages.add_message(request, messages.ERROR,
@@ -363,6 +374,8 @@ def edit_collection(request, id):
 
                 SearchIndex.reset(coll.id)
                 SearchIndex.index(coll, ['name', 'metadata'])
+
+                edited_collection_signal.send(None, user=request.user, collection=coll)
 
                 return redirect('archive:view', path=coll.path)
             except UniqueException:
