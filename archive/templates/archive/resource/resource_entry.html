@@ -4,13 +4,15 @@
   <div class="row">
 
       {% if resource.can_read %}
+      <i class="label label-info">{{resource.type|default:"Unknown"}}</i>
+      &nbsp;
       <a href="{% url 'archive:resource_view' id=resource.id %}">
-        <i class="label label-info">{{resource.type|default:"Unknown"}}</i>&nbsp;
         {{ resource.name }}
       </a>
       {% else %}
         <span style="color: #999">
-         <i class="label label-default">{{resource.type|default:"Unknown"}}</i>&nbsp;
+         <i class="label label-default">{{resource.type|default:"Unknown"}}</i>
+         &nbsp;
         {{ resource.name }}
         </span>
       {% endif %}

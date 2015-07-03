@@ -268,11 +268,13 @@ def navigate(request, path):
     def child_resources():
         return collection.get_child_resources()
 
+    children = list(child_resources()) + list(child_collections())
+    children.sort(key=lambda x: x['name'].lower())
+
 
     ctx = {
         'collection': collection.to_dict(request.user),
-        'child_collections': [c.to_dict(request.user) for c in child_collections()],
-        'child_resources': [r.to_dict(request.user) for r in child_resources()],
+        'children': [c.to_dict(request.user) for c in children],
         'collection_paths': paths
     }
 

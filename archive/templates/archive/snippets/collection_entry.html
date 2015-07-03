@@ -3,14 +3,15 @@
 
     <div class="col-md-12">
       {% if collection.can_read %}
+      <i class="blue-icon glyphicon glyphicon-folder-open"></i>
+      &nbsp;&nbsp;
       <a href="{% url 'archive:view' path=collection.path %}">
-        <i class="blue-icon glyphicon glyphicon-tags"></i>&nbsp;&nbsp;
-        {{ collection.name }}
+          {{ collection.name }}
       </a>
       {% else %}
         <span style="color: #999;">
-        <i class="gray-icon glyphicon glyphicon-tags"></i>&nbsp;&nbsp;
-        {{ collection.name }}
+        <i class="gray-icon glyphicon glyphicon glyphicon-folder-close"></i>&nbsp;&nbsp;
+          {{ collection.name }}
         </span>
       {% endif %}
     </div>

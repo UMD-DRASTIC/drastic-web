@@ -14,30 +14,25 @@
 {% include "archive/snippets/metadata.html" with metadata=collection.metadata id=collection.id label='success' %}
 <hr/>
 
-<h3 style="margin-bottom:1em;">Collections
-    {% if collection.can_write %}
-    &nbsp;&nbsp;<a class="pull-right btn btn-xs btn-success" href="{% url 'archive:new_collection' parent=collection.id %}">Add new</a>
+{% if collection.can_write %}
+<div class="row">
+  <div class="pull-right">
+    <a class="btn btn-sm btn-success" href="{% url 'archive:new_collection' parent=collection.id %}">Add new collection</a>
+    &nbsp;&nbsp;
+    <a class="btn btn-sm btn-success" href="{% url 'archive:new_resource' container=collection.id %}">Add new resource </a>
+  </div>
+</div>
+<hr/>
+{% endif %}
+
+
+{% for c in children %}
+    {% if c.path %}
+      {% include "archive/snippets/collection_entry.html" with collection=c %}
+    {% else %}
+      {% include "archive/resource/resource_entry.html" with resource=c %}
     {% endif %}
-</h3>
-{% for c in child_collections %}
-    {% include "archive/snippets/collection_entry.html" with collection=c %}
 {% empty %}
-    This collection has no sub-collections
+  This collection is empty
 {% endfor %}
-
-
-<h3 style="margin-bottom:1em;">Resources
-    {% if collection.can_write %}
-    &nbsp;&nbsp;<a class="pull-right btn btn-xs btn-success" href="{% url 'archive:new_resource' container=collection.id %}">Add new</a>
-    {% endif %}
-</h3>
-
-{% for r in child_resources %}
-    {% include "archive/resource/resource_entry.html" with resource=r %}
-{% empty %}
-  This collection has no resources
-{% endfor %}
-
-
-
 
