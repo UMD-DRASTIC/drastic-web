@@ -42,7 +42,6 @@ INSTALLED_APPS = (
     'activity',
     'nodes',
     'users',
-    'router'
 )
 
 DEFAULT_APP_CONFIG = 'indigo_ui.IndigoAppConfig'
