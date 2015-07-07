@@ -432,7 +432,6 @@ def download(request, id):
     if not resource.user_can(request.user, "read"):
         raise PermissionDenied
 
-    print resource.url
     driver = get_driver(resource.url)
 
     resp = StreamingHttpResponse(streaming_content=driver.chunk_content(),

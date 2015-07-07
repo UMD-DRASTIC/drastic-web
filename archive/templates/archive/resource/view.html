@@ -70,6 +70,12 @@
             <th>Modified date/time</th>
             <td>{{resource.modified_ts}}</td>
         </tr>
+        {% if request.user.administrator %}
+        <tr>
+            <th>URL</th>
+            <td>{{resource.url}}</td>
+        </tr>
+        {% endif %}
         {% if resource.metadata|length %}
             <tr><th style="border-bottom: solid 2px #eee;" colspan="2">Custom metadata</th></tr>
         {% endif %}

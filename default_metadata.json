@@ -5,5 +5,12 @@
             "required": true
         }
     ],
-    "resources": []
+    "resources": [
+        {
+            "name": "Type",
+            "required": true,
+            "choices": ["a", "b", "c"]
+
+        }
+    ]
 }

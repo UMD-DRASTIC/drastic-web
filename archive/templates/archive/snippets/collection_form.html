@@ -49,7 +49,12 @@
         </div>
     </div>
     <h4>Metadata</h4>
+    <div class="form-group {% if form.errors.metadata %}has-error{% endif %}">
+    {% if form.errors.metadata %}
+    <div class="alert alert-danger">{{form.errors.metadata}}</div>
+    {% endif %}
     {{form.metadata}}
+    </div>
 
     <button type="submit" class="btn btn-success btn-block">Save</button>
 </form>
