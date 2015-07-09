@@ -132,6 +132,7 @@ CACHES = {
 }
 
 
+COMPRESS_UPLOADS = True
 
 
 LOGGING = {

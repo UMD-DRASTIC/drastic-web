@@ -1,6 +1,9 @@
 from io import BytesIO
 import hashlib
+import zipfile
+from cStringIO import StringIO
 
+from django.conf import settings
 from django.core.files.uploadhandler import FileUploadHandler, StopFutureHandlers
 from django.core.files.uploadedfile import InMemoryUploadedFile
 
@@ -28,13 +31,26 @@ class AgentUploader(FileUploadHandler):
         """
         print u"Received {} bytes".format(len(raw_data))
 
-        self.hasher.update(raw_data)
+        print settings.COMPRESS_UPLOADS
+        if settings.COMPRESS_UPLOADS:
+            # Compress the raw_data and store that instead
+            f = StringIO()
+            z = zipfile.ZipFile(f, "w", zipfile.ZIP_DEFLATED)
+            z.writestr("data", raw_data)
+            z.close()
 
-        part = BlobPart.create(blob_id=self.blob.id, content=raw_data)
+            data = f.getvalue()
+            f.close()
+        else:
+            data = raw_data
+
+        part = BlobPart.create(blob_id=self.blob.id, compressed=settings.COMPRESS_UPLOADS, content=data)
         parts = self.blob.parts or []
         parts.append(part.id)
-
         self.blob.update(parts=parts)
+
+        self.hasher.update(data)
+
 
         return None
 
