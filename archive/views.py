@@ -61,9 +61,19 @@ def resource_view(request, id):
 
     container = Collection.find_by_id(resource.container)
 
+    paths = []
+    full = ""
+    for p in container.path.split('/'):
+        if not p:
+            continue
+        full = u"{}/{}".format(full, p)
+        paths.append( (p,full,) )
+
+
     ctx = {
         "resource": resource.to_dict(request.user),
-        "container": container
+        "container": container,
+        "collection_paths": paths
     }
     return render(request, 'archive/resource/view.html', ctx)
 

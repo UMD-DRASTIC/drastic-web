@@ -5,11 +5,23 @@
 {% block main_content %}
 
 <h2>Resource - {{resource.name}}
-<a class="pull-right btn btn-default" href="{% url 'archive:view' path=resource.parentURI %}">
-&laquo; Back to {{ resource.collection.name }} collection
-</a>
+        <a class="btn btn-success pull-right" href="{% url 'archive:download' id=resource.id %}">Download file</a>
+
 </h2>
 <hr/>
+
+
+<ol class="breadcrumb">
+  <li><a href="{% url 'archive:view' path="" %}">Home</a></li>
+  {% for coll,full in collection_paths %}
+    {% if forloop.last %}
+        <li class="active">{{coll}}</li>
+    {% else %}
+        <li><a href="{% url 'archive:view' path=full %}/">{{coll}}</a></li>
+    {% endif %}
+  {% endfor %}
+</ol>
+
 
 {# Permission check for action bar .... #}
 
@@ -20,8 +32,6 @@
         {% if resource.can_delete %}
         <a class="btn btn-danger" href='{% url "archive:delete_resource" id=resource.id %}'>Delete Resource</a>
         {% endif %}
-
-        <a class="btn btn-success pull-right" href="{% url 'archive:download' id=resource.id %}">Download resource</a>
 
         <div class="clearfix"></div>
     </div>
