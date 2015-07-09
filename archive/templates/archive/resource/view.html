@@ -44,9 +44,7 @@
     <h4>Preview</h4>
     <hr/>
     <iframe src="{% url 'archive:preview' id=resource.id%}" style="width:420px; height: 560px; border: none;" >
-
     </iframe>
-    <img src="http://placehold.it/420x560">
 </div>
 
 <div class="col-md-6">
@@ -61,7 +59,7 @@
         </tr>
         <tr>
             <th>Original filename</th>
-            <td>{{resource.filename|default:"Not set"}}</td>
+            <td title="{{resource.filename|default:'Not set'}}">{{resource.filename|default:"Not set"|truncatechars:40}}</td>
         </tr>
         <tr>
             <th>Mimetype</th>

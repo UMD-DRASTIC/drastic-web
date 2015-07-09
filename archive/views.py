@@ -460,9 +460,10 @@ def preview(request, id):
     resource = Resource.find_by_id(id)
     if not resource:
         raise Http404
+
     preview_info = {
-        "type": "image",
-        "url": "http://....."
+#        "type": "image",
+#        "url": "http://....."
     }
 
     return render(request, 'archive/preview.html', {'preview': preview_info})
