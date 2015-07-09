@@ -449,3 +449,21 @@ def download(request, id):
     resp['Content-Disposition'] = 'attachment; filename="{}"'.format(resource.file_name)
 
     return resp
+
+
+@login_required
+def preview(request, id):
+    """
+    Find the preview of the resource with the given ID and deliver it.  This will
+    be rendered in the iframe of the resource view page.
+    """
+    resource = Resource.find_by_id(id)
+    if not resource:
+        raise Http404
+    preview_info = {
+        "type": "image",
+        "url": "http://....."
+    }
+
+    return render(request, 'archive/preview.html', {'preview': preview_info})
+

@@ -15,4 +15,5 @@ urlpatterns = [
 
     url(r'^view(?P<path>.*)$', 'archive.views.navigate', name='view'),
     url(r'^download/(?P<id>.*)$', 'archive.views.download', name='download'),
+    url(r'^preview/(?P<id>.*)$', 'archive.views.preview', name='preview'),
 ]
