@@ -1,0 +1,29 @@
+---
+
+# Host for the CDMI interface.
+CDMI:
+    host: https://127.0.0.1:8000/cdmi
+    # HTTP request headers to pass to the host.
+    headers:
+        X-CDMI-Specification-Version: 1.1
+    object-container: testrunner
+
+# Host for the authorization interface.
+authz:
+    host: https://localhost:4443/api/authz
+    username: installer
+    password: rellatsni
+    headers:
+        Accept: application/json
+
+# Should we verify the SSL certificate coming from the host?
+verify-certificate: False
+
+# Set the maximum size of the error log for each test.
+log-max-size: 4096
+
+# Locust minimum/maximum waiting time in ms for a client to make a request.
+locust-min-time: 1000
+locust-max-time: 2000
+
+...

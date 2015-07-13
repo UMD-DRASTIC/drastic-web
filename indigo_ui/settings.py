@@ -43,7 +43,7 @@ INSTALLED_APPS = (
     'nodes',
     'users',
     #'s3',
-    #'cdmi'
+    'cdmi'
 )
 
 DEFAULT_APP_CONFIG = 'indigo_ui.IndigoAppConfig'
@@ -61,7 +61,8 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     #'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'users.middleware.CassandraAuth'
+    'users.middleware.CassandraAuth',
+    'cdmi.middleware.CDMIMiddleware'
 )
 
 ROOT_URLCONF = 'indigo_ui.urls'
