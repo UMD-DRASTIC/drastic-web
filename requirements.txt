@@ -20,3 +20,4 @@ Pygments==2.0.2
 pytz==2015.2
 PyYAML==3.11
 shortuuid==0.4.2
+gunicorn
