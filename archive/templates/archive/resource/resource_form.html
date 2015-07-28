@@ -20,7 +20,11 @@
     </div>
 
     <div class="well form-group {% if form.errors.file %}has-error{% endif %}">
+        {% if action == 'edit' %}
+            File: {{resource.file_name}}
+        {% else %}
         <input type="file" name="file">
+        {% endif %}
     </div>
 
     <div class="row">&nbsp;</div>

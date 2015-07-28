@@ -4,8 +4,8 @@ from django.contrib import messages
 from django.contrib.auth import logout
 
 def home(request):
-    #if request.user.is_authenticated():
-    #    return redirect('archive:home')
+    if request.user.is_authenticated():
+        return redirect('archive:home')
     return render(request, 'index.html', {})
 
 def login_view(request):

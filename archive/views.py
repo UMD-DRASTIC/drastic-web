@@ -13,7 +13,7 @@ from django.contrib import messages
 
 
 from archive.client import get_default_client
-from archive.forms import CollectionForm, ResourceForm
+from archive.forms import CollectionForm, ResourceForm, ResourceNewForm
 from users.authentication import administrator_required
 
 from activity.signals import (new_resource_signal,
@@ -105,7 +105,7 @@ def new_resource(request, container):
 
 
     if request.method == 'POST':
-        form = ResourceForm(request.POST, files=request.FILES, initial=initial )
+        form = ResourceNewForm(request.POST, files=request.FILES, initial=initial )
         if form.is_valid():
             data = form.cleaned_data
             try:
@@ -141,7 +141,7 @@ def new_resource(request, container):
 
             return redirect('archive:view', path=container.path)
     else:
-        form = ResourceForm( initial=initial )
+        form = ResourceNewForm( initial=initial )
 
     ctx = {
         "form": form,
@@ -165,7 +165,7 @@ def edit_resource(request, id):
         raise PermissionDenied
 
     if request.method == "POST":
-        form = ResourceForm(request.POST, files=request.FILES)
+        form = ResourceForm(request.POST)
         if form.is_valid():
             # TODO: Check for duplicates
             metadata = {}
@@ -175,20 +175,12 @@ def edit_resource(request, id):
             try:
                 data = form.cleaned_data
 
-                blob_id = data['file'].read()
-                url = "cassandra://{}".format(blob_id)
-
                 resource.update(name=data['name'],
                             metadata=metadata,
                             read_access=data['read_access'],
                             write_access=data['write_access'],
                             delete_access=data['delete_access'],
-                            edit_access=data['edit_access'],
-                            url=url,
-                            size=data['file'].size,
-                            mimetype=data['file'].content_type,
-                            file_name=data['file'].name,
-                            type=get_extension(data['file'].name) )
+                            edit_access=data['edit_access'])
 
                 notify_agent(resource.id, "resource:edit")
                 SearchIndex.reset(resource.id)

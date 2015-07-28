@@ -44,7 +44,6 @@ class ResourceForm(forms.Form):
     groups = get_groups
 
     name = forms.CharField(label='Resource name', max_length=100, required=True)
-    file = forms.FileField(required=False)
     metadata = forms.CharField(label="Metadata", required=False,
                                widget=JsonPairInputs())
     read_access = forms.MultipleChoiceField(required=False,
@@ -71,3 +70,6 @@ class ResourceForm(forms.Form):
             raise forms.ValidationError([forms.ValidationError(e) for e in errs])
         return data
 
+
+class ResourceNewForm(ResourceForm):
+    file = forms.FileField(required=True)
