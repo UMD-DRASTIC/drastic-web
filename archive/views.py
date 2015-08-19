@@ -414,6 +414,7 @@ def delete_collection(request, id):
     if request.method == "POST":
         SearchIndex.reset(coll.id)
         # TODO: Mark collection as inactive...
+        Collection.delete_all(coll.id)
         messages.add_message(request, messages.INFO,
                                      "The collection '{}' has been deleted".format(coll.name))
         return redirect('archive:view', path='')
