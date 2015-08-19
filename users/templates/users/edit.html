@@ -1,0 +1,18 @@
+{% extends "archive/base.html" %}
+
+{% block title %}Edit User - {{user.username}}{% endblock title %}
+
+{% block main_content %}
+
+<h2>Edit User - {{user.username}}
+    <a class="pull-right btn btn-default" href="{% url 'users:home' %}">
+    &laquo; Back to user management
+    </a>
+</h2>
+<hr/>
+
+{% include "users/user_form.html" with form=form user=user action='edit'%}
+
+{% endblock main_content %}
+
+

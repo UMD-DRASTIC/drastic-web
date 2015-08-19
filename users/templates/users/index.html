@@ -9,8 +9,17 @@
 
 
 {% block main_content %}
-    <h2>Users ({{ user_count }})</h2>
-    <hr/>
+    <h2>Users ({{ user_count }})</h2><hr/>
+
+	{% if user.administrator %}
+	<div class="row">
+	  <div class="pull-right">
+	    <a class="btn btn-sm btn-success" href="{% url 'users:new_user' %}">Add new user</a>
+	    
+	  </div>
+	</div>
+	<hr/>
+	{% endif %}
 
     {% for user in users %}
         {% include "users/usertab.html" with user=user%}

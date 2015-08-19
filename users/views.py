@@ -1,14 +1,25 @@
-from django.http import HttpResponseRedirect
-from django.shortcuts import render, get_object_or_404
-from django.contrib.auth.models import User
+from django.shortcuts import render, redirect
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from django.http import Http404
+from django.contrib import messages
+
+from indigo.models import User
+
+from users.forms import UserForm
+
+def notify_agent(user_id, event=""):
+    from nodes.client import choose_client
+    client = choose_client()
+    client.notify(user_id, event)
 
 @login_required
 def home(request):
-    user_objs = User.objects.order_by('username')
+    # TODO: Order by username
+    user_objs = list(User.objects.all())
 
-    paginator = Paginator(user_objs.all(), 20)
+    paginator = Paginator(user_objs, 10)
     page = request.GET.get('page')
     try:
         users = paginator.page(page)
@@ -20,14 +31,14 @@ def home(request):
         users = paginator.page(paginator.num_pages)
 
     ctx = {
+        "user": request.user,
         "users": users,
-        "user_count": user_objs.count()
+        "user_count": len(user_objs)
     }
     return render(request, 'users/index.html', ctx)
 
 def userlogin(request):
     from django.contrib.auth import login
-    from indigo.models import User
 
     if request.method == "GET":
         return render(request, 'users/login.html', {})
@@ -51,7 +62,7 @@ def userlogin(request):
 
         if not errors:
             request.session['user'] = unicode(user.id)
-            return HttpResponseRedirect("/")
+            return redirect("/")
 
     ctx = {}
     if errors:
@@ -61,6 +72,91 @@ def userlogin(request):
     return render(request, 'users/login.html', ctx)
 
 
+@login_required
+def delete_user(request, id):
+    user = User.find(id)
+    if not user:
+        raise Http404
+
+    if not request.user.administrator:
+        raise PermissionDenied
+
+    if request.method == "POST":
+        user.delete()
+        messages.add_message(request, messages.INFO,
+                             "The user '{}' has been deleted".format(user.username))
+        return redirect('users:home')
+
+    # Requires delete on user
+    ctx = {
+        "user": user,
+    }
+
+    notify_agent(user.id, "user:delete")
+    return render(request, 'users/delete.html', ctx)
+
+@login_required
+def edit_user(request, id):
+    # Requires edit on user
+    user = User.find(id)
+    print id, user
+    if not user:
+        raise Http404()
+    
+    if not request.user.administrator:
+        raise PermissionDenied
+    
+    if request.method == "POST":
+        form = UserForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+
+            user.update(username=data['username'],
+                        email=data['email'],
+                        administrator=data['administrator'],
+                        active=data['active'])
+            if data["password"] != user.password:
+                user.update(password=data["password"])
+            notify_agent(user.id, "user:edit")
+            return redirect('users:home')
+    else:
+        initial_data = {'username': user.username,
+                        'email': user.email,
+                        'administrator': user.administrator,
+                        "active": user.active,
+                        "password": user.password
+                       }
+        form = UserForm(initial=initial_data)
+    
+    ctx = {
+        "form": form,
+        "user": user,
+    }
+
+    return render(request, 'users/edit.html', ctx)
+
+
+@login_required
+def new_user(request):
+    if request.method == 'POST':
+        form = UserForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            User.create(username=data.get("username"),
+                        # TODO: Check if we can't harmonize unicode use for passwords between django and CLI
+                        password=data.get("password").encode("ascii", "ignore"),
+                        email=data.get("email", ""),
+                        administrator=data.get("administrator", False),
+                        active=data.get("active", False))
+            return redirect('users:home')
+    else:
+        form = UserForm()
+
+    ctx = {
+        "form": form,
+    }
+    return render(request, 'users/new.html', ctx)
+
 def userlogout(request):
     request.session.flush()
     request.user = None
@@ -68,9 +164,10 @@ def userlogout(request):
 
 @login_required
 def user_view(request, id):
-    user_obj = get_object_or_404(User, username=id)
+    # argument is the login name, not the uuid in Cassandra
+    user = User.find(id)
 
     ctx = {
-        "user_obj": user_obj,
+        "user_obj": user,
     }
     return render(request, 'users/view.html', ctx)

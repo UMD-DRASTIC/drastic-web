@@ -16,35 +16,16 @@
 
     <div>
         <div>
-            <strong>Full name:</strong> {{ user_obj.get_full_name|default:"Not supplied"}}
+            <strong>Active:</strong> <input type="checkbox" name="active" {% if user_obj.active %}checked{% endif %} />
         </div>
         <div>
-            <strong>Department:</strong>
+            <strong>Administrator:</strong> <input type="checkbox" name="active" {% if user_obj.administrator %}checked{% endif %} />
         </div>
+        
         <div>
             <strong>Email:</strong> {{ user_obj.email|default:"Private"}}
         </div>
-        <div>
-            <strong>Telephone:</strong>
-        </div>
     </div>
 
-    <h3>Groups</h3>
-    <div>
-        {% if user_obj.groups.count == 0 %}
-            {{user_obj.username}} is not in any groups.
-        {% else %}
-            <ul>
-            {% for g in user_obj.groups.all %}
-                <li>{{ g.name }}</li>
-            {% endfor %}
-            </ul>
-        {% endif %}
-    </div>
-
-    <h3>Activity</h3>
-    <div>
-
-    </div>
 
 {% endblock main_content %}
