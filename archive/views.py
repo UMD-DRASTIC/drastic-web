@@ -51,7 +51,6 @@ def notify_agent(resource_id, event=""):
 
 @login_required()
 def resource_view(request, id):
-
     resource = Resource.find_by_id(id)
     if not resource:
         raise Http404();
@@ -223,15 +222,20 @@ def delete_resource(request, id):
     if not resource.user_can(request.user, "delete"):
         raise PermissionDenied
 
-    # TODO: Make sure the GET request warns the user and then the
-    # POST request can actually delete the resource.
-
-    # TODO: Make resource deletion a soft delete.
+    container = resource.get_container()
+    
+    if request.method == "POST":
+        # TODO: Check if there's a Search index to reset for the resource ?
+        #SearchIndex.reset(coll.id)
+        resource.delete()
+        messages.add_message(request, messages.INFO,
+                             "The resource '{}' has been deleted".format(resource.name))
+        return redirect('archive:view', path=container.path)
 
     # Requires delete on resource
     ctx = {
-        "resource": "",
-        "container": "",
+        "resource": resource,
+        "container": container,
     }
 
     notify_agent(resource.id, "resource:delete")

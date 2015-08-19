@@ -1,0 +1,29 @@
+{% extends "archive/base.html" %}
+
+{% block title %}Delete Resource - {{resource.name}}{% endblock title %}
+
+{% block main_content %}
+
+    <h2>Delete Resource - {{resource.name}}</h2>
+
+    <br/><br/>
+    <div style="font-size:1.5em;" class="alert alert-danger">
+        <strong>Deleting this resource will delete this resource.</strong>
+    </div>
+
+    <div class="row">
+    </div>
+
+    <div style="text-align:center; margin-top: 20px;">
+        <div style='font-size: 1.5em'>
+        Are you sure you wish to continue?
+        </div>
+
+        <form action="{% url 'archive:delete_resource' id=resource.id %}" method="POST">
+            {% csrf_token %}
+            <button class="btn btn-lg btn-danger">Delete this resource</button>
+            <a href="{% url 'archive:view' path=container.path %}" class="btn btn-lg btn-success">Cancel</a>
+        </form>
+
+    </div>
+{% endblock main_content %}
