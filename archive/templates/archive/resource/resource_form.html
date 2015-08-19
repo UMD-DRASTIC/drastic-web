@@ -23,7 +23,7 @@
         {% if action == 'edit' %}
             File: {{resource.file_name}}
         {% else %}
-        <input type="file" name="file">
+           <input type="file" name="file" onchange="$('#name').val(this.value)"/>
         {% endif %}
     </div>
 
@@ -122,6 +122,10 @@ $(document).ready(function(){
         } else {
             minus.show();
         }
+    }
+
+    function update_name() {
+        alert("update");
     }
 
 
