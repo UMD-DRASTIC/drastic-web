@@ -2,7 +2,12 @@
 <div class="resource-entry">
 
   <div class="row">
-
+      {% if resource.can_delete %}
+        <a href="{% url 'archive:delete_resource' id=resource.id %}">
+        <i class="blue-icon glyphicon glyphicon glyphicon-remove-circle"></i>
+        &nbsp;&nbsp;
+        </a>
+      {% endif %}
       {% if resource.can_read %}
       <i class="label label-info">{{resource.type|default:"Unknown"}}</i>
       &nbsp;
