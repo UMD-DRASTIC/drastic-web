@@ -3,7 +3,7 @@
 
   <div class="row">
       {% if resource.can_delete %}
-        <a href="{% url 'archive:delete_resource' id=resource.id %}">
+        <a href="{% url 'archive:delete_resource' path=resource.path %}">
         <i class="blue-icon glyphicon glyphicon glyphicon-remove-circle"></i>
         &nbsp;&nbsp;
         </a>
@@ -11,7 +11,7 @@
       {% if resource.can_read %}
       <i class="label label-info">{{resource.type|default:"Unknown"}}</i>
       &nbsp;
-      <a href="{% url 'archive:resource_view' id=resource.id %}">
+      <a href="{% url 'archive:resource_view' path=resource.path %}">
         {{ resource.name }}
       </a>
       {% else %}
@@ -23,7 +23,7 @@
       {% endif %}
 
       {% if resource.can_read %}
-      <a class="pull-right" href="{% url 'archive:download' id=resource.id%}" >
+      <a class="pull-right" href="{% url 'archive:download' path=resource.path%}" >
       Download  <i class="glyphicon glyphicon-download-alt"></i>
       </a>
       {% endif %}

@@ -13,7 +13,7 @@ class IndigoAppConfig(AppConfig):
         root = Collection.get_root_collection()
         if not root:
             print "Creating root collection"
-            Collection.create(name="Home", path="/")
+            Collection.create_root()
         else:
             print "Using existing root collection"
 

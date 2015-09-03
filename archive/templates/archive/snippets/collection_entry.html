@@ -3,7 +3,7 @@
 
     <div class="col-md-12">
       {% if collection.can_delete %}
-        <a href="{% url 'archive:delete_collection' id=collection.id %}">
+        <a href="{% url 'archive:delete_collection' path=collection.path %}">
         <i class="blue-icon glyphicon glyphicon glyphicon-remove-circle"></i>
         &nbsp;&nbsp;
         </a>

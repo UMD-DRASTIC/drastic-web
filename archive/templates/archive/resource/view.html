@@ -5,7 +5,7 @@
 {% block main_content %}
 
 <h2>Resource - {{resource.name}}
-        <a class="btn btn-success pull-right" href="{% url 'archive:download' id=resource.id %}">Download file</a>
+        <a class="btn btn-success pull-right" href="{% url 'archive:download' path=resource.path %}">Download file</a>
 
 </h2>
 <hr/>
@@ -27,10 +27,10 @@
 
     <div class="control-bar">
         {% if resource.can_edit %}
-        <a class="btn btn-info" href='{% url "archive:edit_resource" id=resource.id %}'%}>Edit Resource</a>
+        <a class="btn btn-info" href='{% url "archive:edit_resource" path=resource.path %}'%}>Edit Resource</a>
         {% endif %}
         {% if resource.can_delete %}
-        <a class="btn btn-danger" href='{% url "archive:delete_resource" id=resource.id %}'>Delete Resource</a>
+        <a class="btn btn-danger" href='{% url "archive:delete_resource" path=resource.path %}'>Delete Resource</a>
         {% endif %}
 
         <div class="clearfix"></div>
@@ -43,7 +43,7 @@
 <div class="col-md-6">
     <h4>Preview</h4>
     <hr/>
-    <iframe src="{% url 'archive:preview' id=resource.id%}" style="width:420px; height: 560px; border: none;" >
+    <iframe src="{% url 'archive:preview' path=resource.path%}" style="width:420px; height: 560px; border: none;" >
     </iframe>
 </div>
 

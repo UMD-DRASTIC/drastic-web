@@ -16,10 +16,10 @@
 
 <form id="loginForm" method="POST" action="{{post_url}}" novalidate="novalidate">
     {% csrf_token %}
-    <div class="form-group {% if form.errors.name %}has-error{% endif %}">
+    <!--div class="form-group {% if form.errors.name %}has-error{% endif %}">
         <label for="name" class="control-label">Name</label>
         <input type="text" class="form-control" id="name" name="name" value="{{form.name.value|default:''}}"  title="Enter the collection name" placeholder="Name of collection">
-    </div>
+    </div-->
 
     <div class="row">&nbsp;</div>
     <div class="row">

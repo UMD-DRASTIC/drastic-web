@@ -20,7 +20,7 @@
         Are you sure you wish to continue?
         </div>
 
-        <form action="{% url 'archive:delete_collection' id=collection.id %}" method="POST">
+        <form action="{% url 'archive:delete_collection' path=collection.path %}" method="POST">
             {% csrf_token %}
             <button class="btn btn-lg btn-danger">Delete this collection</button>
             <a href="{% url 'archive:view' path=collection.path %}" class="btn btn-lg btn-success">Cancel</a>

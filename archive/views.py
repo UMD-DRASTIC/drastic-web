@@ -50,19 +50,19 @@ def notify_agent(resource_id, event=""):
 ##############################################################################
 
 @login_required()
-def resource_view(request, id):
-    resource = Resource.find_by_id(id)
+def resource_view(request, path):
+    resource = Resource.find_by_path(path)
     if not resource:
         raise Http404();
 
     if not resource.user_can(request.user, "read"):
         raise PermissionDenied
 
-    container = Collection.find_by_id(resource.container)
+    container = Collection.find_by_path(resource.container)
 
     paths = []
     full = ""
-    for p in container.path.split('/'):
+    for p in container.path().split('/'):
         if not p:
             continue
         full = u"{}/{}".format(full, p)
@@ -77,14 +77,17 @@ def resource_view(request, id):
     return render(request, 'archive/resource/view.html', ctx)
 
 @login_required
-def new_resource(request, container):
+def new_resource(request, parent):
+    if parent == '/':
+        parent_collection = Collection.get_root_collection()
+    else:
+        parent_collection = Collection.find_by_path(parent)
     # Inherits perms from container by default.
-    container = Collection.find_by_id(container)
-    if not container:
+    if not parent_collection:
         raise Http404()
 
     # User must be able to write to this collection
-    if not container.user_can(request.user, "write"):
+    if not parent_collection.user_can(request.user, "write"):
         raise PermissionDenied
 
     keys = get_resource_keys()
@@ -96,10 +99,10 @@ def new_resource(request, container):
 
     initial = {
         'metadata': json.dumps(mdata),
-        'read_access': container.read_access,
-        'write_access': container.write_access,
-        'edit_access': container.edit_access,
-        'delete_access': container.delete_access,
+        'read_access': parent_collection.read_access,
+        'write_access': parent_collection.write_access,
+        'edit_access': parent_collection.edit_access,
+        'delete_access': parent_collection.delete_access,
     }
 
 
@@ -116,7 +119,7 @@ def new_resource(request, container):
                 for k, v in json.loads(data['metadata']):
                     metadata[k] = v
                 resource = Resource.create(name=name,
-                                           container=container.id,
+                                           container=parent_collection.path(),
                                            metadata=metadata,
                                            read_access=data['read_access'],
                                            write_access=data['write_access'],
@@ -128,7 +131,7 @@ def new_resource(request, container):
                                            file_name=data['file'].name,
                                            type=get_extension(data['file'].name))
 
-                notify_agent(resource.id, "resource:new")
+                notify_agent(resource.path(), "resource:new")
                 SearchIndex.index(resource, ['name', 'metadata'])
                 messages.add_message(request, messages.INFO,
                                      u"New resource '{}' created" .format(resource.name))
@@ -138,25 +141,25 @@ def new_resource(request, container):
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use within the current collection")
 
-            return redirect('archive:view', path=container.path)
+            return redirect('archive:view', path=parent_collection.path())
     else:
         form = ResourceNewForm( initial=initial )
 
     ctx = {
         "form": form,
-        "container": container,
+        "container": parent_collection,
         "groups": Group.objects.all()
     }
     return render(request, 'archive/resource/new.html', ctx)
 
 @login_required
-def edit_resource(request, id):
+def edit_resource(request, path):
     # Requires edit on resource
-    resource = Resource.find_by_id(id)
+    resource = Resource.find_by_path(path)
     if not resource:
         raise Http404()
 
-    container = Collection.find_by_id(resource.container)
+    container = Collection.find_by_path(resource.container)
     if not container:
         raise Http404()
 
@@ -174,20 +177,19 @@ def edit_resource(request, id):
             try:
                 data = form.cleaned_data
 
-                resource.update(name=data['name'],
-                            metadata=metadata,
-                            read_access=data['read_access'],
-                            write_access=data['write_access'],
-                            delete_access=data['delete_access'],
-                            edit_access=data['edit_access'])
+                resource.update(metadata=metadata,
+                                read_access=data['read_access'],
+                                write_access=data['write_access'],
+                                delete_access=data['delete_access'],
+                                edit_access=data['edit_access'])
 
-                notify_agent(resource.id, "resource:edit")
-                SearchIndex.reset(resource.id)
+                notify_agent(resource.path(), "resource:edit")
+                SearchIndex.reset(resource.path())
                 SearchIndex.index(resource, ['name', 'metadata'])
 
                 edited_resource_signal.send(None, user=request.user, resource=resource)
 
-                return redirect('archive:resource_view', id=resource.id)
+                return redirect('archive:resource_view', path=resource.path())
             except UniqueException:
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use withinin the current collection")
@@ -214,8 +216,8 @@ def edit_resource(request, id):
     return render(request, 'archive/resource/edit.html', ctx)
 
 @login_required
-def delete_resource(request, id):
-    resource = Resource.find_by_id(id)
+def delete_resource(request, path):
+    resource = Resource.find_by_path(path)
     if not resource:
         raise Http404
 
@@ -223,14 +225,13 @@ def delete_resource(request, id):
         raise PermissionDenied
 
     container = resource.get_container()
-    
     if request.method == "POST":
         # TODO: Check if there's a Search index to reset for the resource ?
         #SearchIndex.reset(coll.id)
         resource.delete()
         messages.add_message(request, messages.INFO,
                              "The resource '{}' has been deleted".format(resource.name))
-        return redirect('archive:view', path=container.path)
+        return redirect('archive:view', path=container.path())
 
     # Requires delete on resource
     ctx = {
@@ -238,7 +239,7 @@ def delete_resource(request, id):
         "container": container,
     }
 
-    notify_agent(resource.id, "resource:delete")
+    notify_agent(resource.path(), "resource:delete")
     return render(request, 'archive/resource/delete.html', ctx)
 
 
@@ -250,7 +251,10 @@ def delete_resource(request, id):
 def navigate(request, path):
 
     #client     = get_default_client()
-    collection = Collection.find_by_path(path or '/')
+    if not path or path == '/':
+        collection = Collection.get_root_collection()
+    else:
+        collection = Collection.find_by_path(path or '/')
 
     if not collection:
         raise Http404()
@@ -262,7 +266,7 @@ def navigate(request, path):
 
     paths = []
     full = ""
-    for p in collection.path.split('/'):
+    for p in collection.path().split('/'):
         if not p:
             continue
         full = u"{}/{}".format(full, p)
@@ -274,14 +278,16 @@ def navigate(request, path):
     def child_resources():
         return collection.get_child_resources()
 
-    children = list(child_resources()) + list(child_collections())
-    children.sort(key=lambda x: x['name'].lower())
-
-
+    children_c = list(child_collections())
+    children_c.sort(key=lambda x: x['name'].lower())
+    children_r = list(child_resources())
+    children_r.sort(key=lambda x: x['name'].lower())
     ctx = {
         'collection': collection.to_dict(request.user),
-        'children': [c.to_dict(request.user) for c in children],
-        'collection_paths': paths
+        'children_c': [c.to_dict(request.user) for c in children_c],
+        'children_r': [c.to_dict(request.user) for c in children_r],
+        'collection_paths': paths,
+        'empty': len(children_c) + len(children_r) == 0,
     }
 
     return render(request, 'archive/index.html', ctx)
@@ -304,10 +310,10 @@ def search(request):
 
 @login_required
 def new_collection(request, parent):
-    if not parent:
+    if parent == '/':
         parent_collection = Collection.get_root_collection()
     else:
-        parent_collection = Collection.find_by_id(parent)
+        parent_collection = Collection.find_by_path(parent)
 
     if not parent_collection.user_can(request.user, "write"):
         raise PermissionDenied
@@ -318,7 +324,6 @@ def new_collection(request, parent):
         mdata[k] = ""
     if not mdata:
         mdata[""] = ""
-
 
     initial = {
         'metadata': json.dumps(mdata),
@@ -333,12 +338,12 @@ def new_collection(request, parent):
             data = form.cleaned_data
             try:
                 name = data['name']
-                parent = parent_collection.id
+                parent = parent_collection.path()
                 metadata = {}
                 for k, v in json.loads(data['metadata']):
                     metadata[k] = v
                 collection = Collection.create(name=name,
-                                               parent=parent,
+                                               container=parent,
                                                metadata=metadata,
                                                read_access=data['read_access'],
                                                write_access=data['write_access'],
@@ -349,7 +354,7 @@ def new_collection(request, parent):
                                      u"New collection '{}' created" .format(collection.name))
 
                 new_collection_signal.send(None, user=request.user, collection=collection)
-                return redirect('archive:view', path=collection.path)
+                return redirect('archive:view', path=collection.path())
             except UniqueException:
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use in the current collection")
@@ -358,8 +363,8 @@ def new_collection(request, parent):
     return render(request, 'archive/new.html', {'form': form, "parent": parent_collection, "groups": groups})
 
 @login_required
-def edit_collection(request, id):
-    coll = Collection.find_by_id(id)
+def edit_collection(request, path):
+    coll = Collection.find_by_path(path)
 
     if not coll.user_can(request.user, "edit"):
         raise PermissionDenied
@@ -373,8 +378,7 @@ def edit_collection(request, id):
                 metadata[k] = v
             try:
                 data = form.cleaned_data
-                coll.update(name=data['name'],
-                            metadata=metadata,
+                coll.update(metadata=metadata,
                             read_access=data['read_access'],
                             write_access=data['write_access'],
                             delete_access=data['delete_access'],
@@ -385,7 +389,7 @@ def edit_collection(request, id):
 
                 edited_collection_signal.send(None, user=request.user, collection=coll)
 
-                return redirect('archive:view', path=coll.path)
+                return redirect('archive:view', path=coll.path())
             except UniqueException:
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use in the current collection")
@@ -405,8 +409,8 @@ def edit_collection(request, id):
     return render(request, 'archive/edit.html', {'form': form, 'collection': coll, 'groups': groups})
 
 @login_required
-def delete_collection(request, id):
-    coll = Collection.find_by_id(id)
+def delete_collection(request, path):
+    coll = Collection.find_by_path(path)
 
     if not coll.user_can(request.user, "delete"):
         raise PermissionDenied
@@ -414,7 +418,7 @@ def delete_collection(request, id):
     if request.method == "POST":
         SearchIndex.reset(coll.id)
         # TODO: Mark collection as inactive...
-        Collection.delete_all(coll.id)
+        Collection.delete_all(coll.path())
         messages.add_message(request, messages.INFO,
                                      "The collection '{}' has been deleted".format(coll.name))
         return redirect('archive:view', path='')
@@ -423,7 +427,7 @@ def delete_collection(request, id):
 
 
 @login_required
-def download(request, id):
+def download(request, path):
     """
     Requests for download are redirected to the agent via the agent,
     but for debugging the requests are served directly.
@@ -432,7 +436,7 @@ def download(request, id):
     """
     from indigo.models.blob import Blob, BlobPart
 
-    resource = Resource.find_by_id(id)
+    resource = Resource.find_by_path(path)
     if not resource:
         raise Http404
 
@@ -449,12 +453,12 @@ def download(request, id):
 
 
 @login_required
-def preview(request, id):
+def preview(request, path):
     """
     Find the preview of the resource with the given ID and deliver it.  This will
     be rendered in the iframe of the resource view page.
     """
-    resource = Resource.find_by_id(id)
+    resource = Resource.find_by_path(path)
     if not resource:
         raise Http404
 

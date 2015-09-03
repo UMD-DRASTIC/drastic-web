@@ -6,18 +6,18 @@
 {% endif %}
 
 {% if action == 'edit' %}
-    {% url 'archive:edit_resource' id=resource.id as post_url %}
+    {% url 'archive:edit_resource' path=resource.path as post_url %}
 {% else %}
-    {% url 'archive:new_resource' container=container.id as post_url %}
+    {% url 'archive:new_resource' container=container.path as post_url %}
 {% endif %}
 
 
 <form id="loginForm" method="POST" action="{{post_url}}" novalidate="novalidate" enctype="multipart/form-data">
     {% csrf_token %}
-    <div class="form-group {% if form.errors.name %}has-error{% endif %}">
+    <!--div class="form-group {% if form.errors.name %}has-error{% endif %}">
         <label for="name" class="control-label">Name</label>
         <input type="text" class="form-control" id="name" name="name" value="{{form.name.value|default:''}}"  title="Enter the resource name" placeholder="Name of resource">
-    </div>
+    </div-->
 
     <div class="well form-group {% if form.errors.file %}has-error{% endif %}">
         {% if action == 'edit' %}

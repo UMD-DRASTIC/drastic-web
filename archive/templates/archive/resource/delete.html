@@ -19,7 +19,7 @@
         Are you sure you wish to continue?
         </div>
 
-        <form action="{% url 'archive:delete_resource' id=resource.id %}" method="POST">
+        <form action="{% url 'archive:delete_resource' path=resource.path %}" method="POST">
             {% csrf_token %}
             <button class="btn btn-lg btn-danger">Delete this resource</button>
             <a href="{% url 'archive:view' path=container.path %}" class="btn btn-lg btn-success">Cancel</a>
