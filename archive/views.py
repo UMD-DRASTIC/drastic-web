@@ -169,10 +169,15 @@ def edit_resource(request, path):
     if request.method == "POST":
         form = ResourceForm(request.POST)
         if form.is_valid():
-            # TODO: Check for duplicates
             metadata = {}
             for k, v in json.loads(form.cleaned_data['metadata']):
-                metadata[k] = v
+                if metadata.has_key(k):
+                    if isinstance(metadata[k], list):
+                        metadata[k].append(v)
+                    else:
+                        metadata[k] = [metadata[k], v]
+                else:
+                    metadata[k] = v
 
             try:
                 data = form.cleaned_data
@@ -194,8 +199,9 @@ def edit_resource(request, path):
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use withinin the current collection")
     else:
-        metadata = json.dumps(resource.metadata)
-        if not resource.metadata:
+        md = resource.get_metadata()
+        metadata = json.dumps(md)
+        if not md:
             metadata = '{"":""}'
 
         initial_data = {'name':resource.name, 'metadata': metadata,
@@ -372,10 +378,16 @@ def edit_collection(request, path):
     if request.method == "POST":
         form = CollectionForm(request.POST)
         if form.is_valid():
-            # TODO: Check for duplicates
             metadata = {}
             for k, v in json.loads(form.cleaned_data['metadata']):
-                metadata[k] = v
+                if metadata.has_key(k):
+                    if isinstance(metadata[k], list):
+                        metadata[k].append(v)
+                    else:
+                        metadata[k] = [metadata[k], v]
+                else:
+                    metadata[k] = v
+
             try:
                 data = form.cleaned_data
                 coll.update(metadata=metadata,
@@ -394,8 +406,9 @@ def edit_collection(request, path):
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use in the current collection")
     else:
-        metadata = json.dumps(coll.metadata)
-        if not coll.metadata:
+        md = coll.get_metadata()
+        metadata = json.dumps(md)
+        if not md:
             metadata = '{"":""}'
 
         initial_data = {'name':coll.name, 'metadata': metadata,

@@ -14,10 +14,12 @@
 
 <form id="loginForm" method="POST" action="{{post_url}}" novalidate="novalidate" enctype="multipart/form-data">
     {% csrf_token %}
-    <!--div class="form-group {% if form.errors.name %}has-error{% endif %}">
-        <label for="name" class="control-label">Name</label>
-        <input type="text" class="form-control" id="name" name="name" value="{{form.name.value|default:''}}"  title="Enter the resource name" placeholder="Name of resource">
-    </div-->
+    {% if action == 'new' %}
+        <div class="form-group {% if form.errors.name %}has-error{% endif %}">
+            <label for="name" class="control-label">Name</label>
+            <input type="text" class="form-control" id="name" name="name" value="{{form.name.value|default:''}}"  title="Enter the resource name" placeholder="Name of resource">
+        </div>
+    {% endif %}
 
     <div class="well form-group {% if form.errors.file %}has-error{% endif %}">
         {% if action == 'edit' %}

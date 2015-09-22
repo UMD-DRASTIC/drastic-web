@@ -70,4 +70,5 @@ class ResourceForm(forms.Form):
 
 
 class ResourceNewForm(ResourceForm):
+    name = forms.CharField(label='Resource name', max_length=100, required=True)
     file = forms.FileField(required=True)

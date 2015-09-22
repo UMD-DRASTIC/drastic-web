@@ -84,7 +84,7 @@ TEMPLATES = [
 ]
 
 CDMI_SERVER = {
-    "endpoint": "http://127.0.0.1:8001/cdmi",
+    "endpoint": "http://127.0.0.1/api/cdmi",
     "username": "",
     "password": "",
 }
@@ -148,3 +148,15 @@ LOGGING = {
         },
     },
 }
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+#        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication'
+    ],
+#     'DEFAULT_PERMISSION_CLASSES': [
+#         'rest_framework.permissions.AllowAny'
+    #]
+}
+# 
+# REST_SESSION_LOGIN = False
