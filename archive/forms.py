@@ -1,9 +1,31 @@
+"""Archive Forms
+
+Copyright 2015 Archive Analytics Solutions
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
+
 from django import forms
 import json
 
+from indigo.metadata import (
+    get_collection_validator,
+    get_resource_validator
+)
+
 from archive.widgets import JsonPairInputs
 
-from indigo.metadata import get_collection_validator, get_resource_validator
 
 def get_groups():
     from indigo.models import Group
@@ -38,6 +60,9 @@ class CollectionForm(forms.Form):
             raise forms.ValidationError([forms.ValidationError(e) for e in errs])
         return data
 
+
+class CollectionNewForm(CollectionForm):
+    name = forms.CharField(label='Collection name', max_length=100, required=True)
 
 class ResourceForm(forms.Form):
     groups = get_groups

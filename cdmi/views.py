@@ -1,3 +1,20 @@
+""""CDMI views
+
+Copyright 2015 Archive Analytics Solutions
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
 from collections import OrderedDict
 import base64
 import mimetypes
@@ -5,10 +22,7 @@ import hashlib
 from cStringIO import StringIO
 import zipfile
 import os
-try:
-    import json
-except ImportError:
-    import simplejson as json
+import json
 
 from django.shortcuts import redirect
 from django.http import JsonResponse
@@ -49,14 +63,11 @@ from indigo.util_archive import (
     is_collection
 )
 from indigo.models.errors import (
-    ContainerAlreadyExistsException,
-    DataObjectAlreadyExistsException,
-    ResourcePolicyConflict,
-    NoSuchContainerException,
-    NoSuchObjectException,
-    NotAContainerException,
-    NotADataObjectException,
-    NoWriteAccess,
+    CollectionConflictError,
+    ResourceConflictError,
+    NoSuchCollectionError,
+    NoSuchResourceError,
+    NoWriteAccessError,
 )
 
 # List of supported version (In order so the first to be picked up is the most
@@ -285,13 +296,13 @@ class CDMIView(APIView):
             else:
                 # Delete data object
                 self.delete_dataObject(path)
-        except NoSuchObjectException:
+        except NoSuchResourceError:
             # Path does not exist at all
             return Response(status=HTTP_404_NOT_FOUND)
-        except (NotADataObjectException, NotAContainerException):
+        except (ResourceConflictError, CollectionConflictError):
             # Incorrectly specified path - object as container or vice versa
             return Response(status=HTTP_404_NOT_FOUND)
-        except NoWriteAccess:
+        except NoWriteAccessError:
             return Response(status=HTTP_403_FORBIDDENHTTP_403_FORBIDDEN)
         else:
             return Response(status=HTTP_204_NO_CONTENT)
@@ -304,14 +315,14 @@ class CDMIView(APIView):
             if collection:
                 return self.delete_container(path)
             else:
-                raise NoSuchObjectException
+                raise NoSuchResourceError
         container = resource.get_container()
         resource.delete()
 
     def delete_container(self, path):
         collection = Collection.find_by_path(path)
         if not collection:
-            raise NoSuchObjectException
+            raise NoSuchResourceError
         Collection.delete_all(collection.path())
 
     def read_container(self, path):
@@ -437,16 +448,16 @@ class CDMIView(APIView):
             else:
                 collection = Collection.get_root_collection()
                 delayed = False
-        except NoSuchContainerException:
+        except NoSuchCollectionError:
             return Response(status=HTTP_404_NOT_FOUND)
-        except DataObjectAlreadyExistsException:
+        except ResourceConflictError:
             pass
-        except ContainerAlreadyExistsException:
+        except CollectionConflictError:
             # ValidationError -> Try to create the root
             # Container exists, we update it
             collection = Collection.find_by_path(path)
             delayed = False
-#         except NoWriteAccess:
+#         except NoWriteAccessError:
 #             self.response.status = "403 Forbidden"
 #             return
         res = self.put_container_metadata(collection)
@@ -505,7 +516,7 @@ class CDMIView(APIView):
             if metadata:
                 collection.update(metadata=metadata)
             return HTTP_204_NO_CONTENT
-        except NoWriteAccess:
+        except NoWriteAccessError:
             return HTTP_403_FORBIDDEN
 #         else:
 #             return HTTP_409_CONFLICT
@@ -596,7 +607,7 @@ class CDMIView(APIView):
                         resource = Resource.find_by_path(path)
                         resource.update(metadata=metadata)
                         return JsonResponse(metadata, status=HTTP_204_NO_CONTENT )
-                    except NoWriteAccess:
+                    except NoWriteAccessError:
                         return Response(status=HTTP_403_FORBIDDEN)
                 else:
                     # To update metadata without data must supply metadata
@@ -699,14 +710,12 @@ class CDMIView(APIView):
                                                size=len(content),
                                                mimetype=mimetype,
                                                type=get_extension(name))
-        except (NoSuchContainerException, NotAContainerException):
+        except (NoSuchCollectionError,
+                CollectionConflictError,
+                NoSuchResourceError):
             return Response(status=HTTP_404_NOT_FOUND)
-        except NotADataObjectException:
-            return Response(status=HTTP_404_NOT_FOUND)
-        except NoWriteAccess:
+        except NoWriteAccessError:
             return Response(status=HTTP_403_FORBIDDEN)
-        except ResourcePolicyConflict:
-            return Response(status=HTTP_412_PRECONDITION_FAILED)
 
         if (use_cdmi):
             response_content_type = 'application/cdmi-object'

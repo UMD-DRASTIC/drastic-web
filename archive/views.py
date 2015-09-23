@@ -1,33 +1,68 @@
+"""Archive views
+
+Copyright 2015 Archive Analytics Solutions
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
+
 import collections
 import json
 import os
 import requests
-
 from django.conf import settings
-from django.http import (StreamingHttpResponse, HttpResponse,
-                         Http404)
+from django.http import (
+    StreamingHttpResponse,
+    HttpResponse,
+    Http404
+)
 from django.core.exceptions import PermissionDenied
-from django.shortcuts import render, redirect
+from django.shortcuts import (
+    render,
+    redirect
+)
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
-
 from archive.client import get_default_client
-from archive.forms import CollectionForm, ResourceForm, ResourceNewForm
+from archive.forms import (
+    CollectionForm,
+    CollectionNewForm,
+    ResourceForm,
+    ResourceNewForm
+)
 from users.authentication import administrator_required
 
-from activity.signals import (new_resource_signal,
-                              new_collection_signal,
-                              edited_resource_signal,
-                              edited_collection_signal)
+from activity.signals import (
+    new_resource_signal,
+    new_collection_signal,
+    edited_resource_signal,
+    edited_collection_signal
+)
 
 from indigo.drivers import get_driver
 from indigo.models.resource import Resource
 from indigo.models.collection import Collection
 from indigo.models.group import Group
 from indigo.models.search import SearchIndex
-from indigo.models.errors import UniqueException
-from indigo.metadata import get_resource_keys, get_collection_keys
+from indigo.models.errors import (
+    CollectionConflictError,
+    ResourceConflictError
+)
+from indigo.metadata import (
+    get_resource_keys,
+    get_collection_keys
+)
 
 # TODO: Move this to a helper
 def get_extension(name):
@@ -36,9 +71,11 @@ def get_extension(name):
         return ext[1:].upper()
     return "UNKNOWN"
 
+
 @login_required()
 def home(request):
     return redirect('archive:view', path='')
+
 
 def notify_agent(resource_id, event=""):
     from nodes.client import choose_client
@@ -137,7 +174,7 @@ def new_resource(request, parent):
                                      u"New resource '{}' created" .format(resource.name))
 
                 new_resource_signal.send(None, user=request.user, resource=resource)
-            except UniqueException:
+            except ResourceConflictError:
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use within the current collection")
 
@@ -195,7 +232,7 @@ def edit_resource(request, path):
                 edited_resource_signal.send(None, user=request.user, resource=resource)
 
                 return redirect('archive:resource_view', path=resource.path())
-            except UniqueException:
+            except ResourceConflictError:
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use withinin the current collection")
     else:
@@ -338,7 +375,7 @@ def new_collection(request, parent):
         "edit_access": parent_collection.edit_access,
         "delete_access": parent_collection.delete_access,
     }
-    form = CollectionForm(request.POST or None, initial=initial)
+    form = CollectionNewForm(request.POST or None, initial=initial)
     if request.method == 'POST':
         if form.is_valid():
             data = form.cleaned_data
@@ -361,7 +398,7 @@ def new_collection(request, parent):
 
                 new_collection_signal.send(None, user=request.user, collection=collection)
                 return redirect('archive:view', path=collection.path())
-            except UniqueException:
+            except CollectionConflictError:
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use in the current collection")
 
@@ -402,7 +439,7 @@ def edit_collection(request, path):
                 edited_collection_signal.send(None, user=request.user, collection=coll)
 
                 return redirect('archive:view', path=coll.path())
-            except UniqueException:
+            except CollectionConflictError:
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use in the current collection")
     else:
