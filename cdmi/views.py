@@ -29,6 +29,7 @@ from django.http import JsonResponse
 from django.http import HttpResponse
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
+from django.utils.translation import ugettext_lazy as _
 from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_202_ACCEPTED,
@@ -47,6 +48,13 @@ from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.reverse import reverse_lazy
+from rest_framework.authentication import (
+    BasicAuthentication,
+    exceptions
+)
+
+from rest_framework import HTTP_HEADER_ENCODING
+from rest_framework.permissions import IsAuthenticated
 
 from cdmi.capabilities import SYSTEM_CAPABILITIES
 from cdmi.storage import CDMIDataAccessObject
@@ -56,6 +64,8 @@ from indigo.models.resource import Resource
 from indigo.models.collection import Collection
 from indigo.models.blob import Blob
 from indigo.models.blob import BlobPart
+from indigo.models.user import User
+
 from indigo.util import split
 from indigo.util_archive import (
     path_exists,
@@ -176,9 +186,26 @@ class OctetStreamRenderer(BaseRenderer):
         return data
 
 
+class CassandraAuthentication(BasicAuthentication):
+    www_authenticate_realm = 'Indigo'
+
+    def authenticate_credentials(self, userid, password):
+        """
+        Authenticate the userid and password against username and password.
+        """
+        user = User.find(userid)
+        if user is None or not user.is_active():
+            raise exceptions.AuthenticationFailed(_('User inactive or deleted.'))
+        if not user.authenticate(password):
+            raise exceptions.AuthenticationFailed(_('Invalid username/password.'))
+        return (user, None)
+
+
 class CDMIView(APIView):
+    authentication_classes = (CassandraAuthentication,)
     renderer_classes = (CDMIContainerRenderer, CDMIObjectRenderer, 
                         JSONRenderer, OctetStreamRenderer)
+    permission_classes = (IsAuthenticated,)
 
     def __init__(self, **kwargs):
         super(CDMIView, self).__init__(**kwargs)
@@ -254,6 +281,9 @@ class CDMIView(APIView):
     
     @csrf_exempt
     def get(self, request, path='/', format=None):
+        self.user = request.user
+        print self.user
+        
         # Add a '/' at the beginning
         path = "/{}".format(path)
         # In CDMI standard a container is defined by the / at the end
@@ -268,6 +298,9 @@ class CDMIView(APIView):
 
     @csrf_exempt
     def put(self, request, path='/', format=None):
+        self.user = request.user
+        print self.user
+        
         # Add a '/' at the beginning
         path = "/{}".format(path)
         # In CDMI standard a container is defined by the / at the end
@@ -282,6 +315,9 @@ class CDMIView(APIView):
 
     @csrf_exempt
     def delete(self, request, path='/', format=None):
+        self.user = request.user
+        print self.user
+        
         # Add a '/' at the beginning
         path = "/{}".format(path)
         # In CDMI standard a container is defined by the / at the end
