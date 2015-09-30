@@ -21,7 +21,7 @@ PyYAML==3.11
 shortuuid==0.4.2
 gunicorn
 crcmod==1.7
-
+paho-mqtt=1.1
 
 #pip install markdown       # Markdown support for the browsable API.
 #pip install django-filter  # Filtering support
