@@ -1,37 +1,48 @@
 # Indigo
 
-Indigo is a data management solution written in Python that allows users to upload and archive data resources.  Data is managed in a Cassandra database, and the associated Indigo Agent is responsible for post-processing on uploaded content.  
+Indigo is a data management solution written in Python that allows users to upload and archive data resources.  Data is managed in a Cassandra database, and the associated Indigo Agent is responsible for post-processing on uploaded content.
 
 The primary interface to Indigo is the Django application in this repository.
 
 
 ## Installing
 
-* Make a virtualenv and activate it
+Indigo deployment is automated using Ansible. Ensure
+your `/etc/ansible/hosts` file contains the following:
 
-```
-git clone git@bitbucket.org:archivea/indigo-web.git
-cd indigo-web
-pip install -r requirements.txt
-```
+```ini
+[indigo-databases]
+127.0.0.1
 
-Before starting the server, you should set the following environment variables.
+[indigo-webservers]
+127.0.0.1
 
-```
-export CQLENG_ALLOW_SCHEMA_MANAGEMENT=1
-export INDIGO_SCHEMA=/path/to/schema.json
-export AGENT_CONFIG=/path/to/agentconfig
-```
-
-The server can then be started (for development) with
-
-```
-./manage.py runserver
+[indigo:children]
+indigo-databases
+indigo-webservers
 ```
 
-## Customising the Schema
+Replace 127.0.0.1 with the address of the server(s) you want to deploy on.
 
-It is possible to customise the optional metadata for collections (folders) and resources (data files) by providing a custom schema.json file.  The JSON object in the schema file should be dictionary with two keys - collections and resources.  Each of these keys will contain a list of dictionaries, where each dictionary defines a single metadata element to be included when editing or creating a resource or collection.  
+From the command line, run:
+
+`ansible-playbook deploy_standalone.yml`
+
+To install just the web server component, run:
+
+`ansible-playbook webservers.yml`
+
+The Indigo web server role comes with some sensible defaults for deploying to a machine, but
+if you feel the need to tweak something you can change a few things in `roles/indigo-web/vars` or
+better still use the command line:
+
+`ansible-playbook webservers.yml --extra-vars default_user_name=joey_bloggs default_password=supersecret`
+
+See [the Ansible documentation](http://docs.ansible.com/ansible/) for more information.
+
+## Customising the schema
+
+It is possible to customise the optional metadata for collections (folders) and resources (data files) by providing a custom schema.json file.  The JSON object in the schema file should be dictionary with two keys - collections and resources.  Each of these keys will contain a list of dictionaries, where each dictionary defines a single metadata element to be included when editing or creating a resource or collection.
 
 Each direction must have at least two keys (name and required) and optionally a third (choices).
 
@@ -44,6 +55,6 @@ Each direction must have at least two keys (name and required) and optionally a 
 
 ## The Indigo CLI
 
-Management of an Indigo instance is done via the ```indigo``` command line interface, which is available from inside the previously created virtualenv.   See <https://bitbucket.org/archivea/indigo> for more information on running the commands.
+Management of an Indigo instance is done via the `indigo` command line interface, which is available from inside the previously created virtualenv.   See <https://bitbucket.org/archivea/indigo> for more information on running the commands.
 
 

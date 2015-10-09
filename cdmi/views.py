@@ -23,6 +23,7 @@ from cStringIO import StringIO
 import zipfile
 import os
 import json
+import time
 
 from django.shortcuts import redirect
 from django.http import JsonResponse
@@ -81,7 +82,7 @@ from indigo.models.errors import (
 )
 
 # List of supported version (In order so the first to be picked up is the most
-# recent one 
+# recent one
 CDMI_SUPPORTED_VERSION = ["1.1", "1.0.2"]
 
 # Possible sections of the CDMI request body where the data object content
@@ -95,7 +96,7 @@ POSSIBLE_DATA_OBJECT_LOCATIONS = [
     'deserializevalue',
     'value'
 ]
-    
+
 # TODO: Move this to a helper
 def get_extension(name):
     _, ext = os.path.splitext(name)
@@ -119,7 +120,7 @@ def check_cdmi_version(request):
 
 def capabilities(request, path):
     """Read all fields from an existing capability object.
-    
+
     TODO: This part of the specification isn't implemented properly according
     to the specification, capabilities should be a special kind of containers
     with ObjectID"""
@@ -177,7 +178,7 @@ class CDMIObjectRenderer(JSONRenderer):
 
 
 class OctetStreamRenderer(BaseRenderer):
-    
+
     media_type = 'application/octet-stream'
     format = 'bin'
 
@@ -203,7 +204,7 @@ class CassandraAuthentication(BasicAuthentication):
 
 class CDMIView(APIView):
     authentication_classes = (CassandraAuthentication,)
-    renderer_classes = (CDMIContainerRenderer, CDMIObjectRenderer, 
+    renderer_classes = (CDMIContainerRenderer, CDMIObjectRenderer,
                         JSONRenderer, OctetStreamRenderer)
     permission_classes = (IsAuthenticated,)
 
@@ -266,7 +267,7 @@ class CDMIView(APIView):
         try:
             acl_dict = obj.get_acl_metadata()
             body['metadata'].update(acl_dict)
-            
+
 #             replicas = self.database.get_replicas_dataObject(username,
 #                                                              storagePath)
 #             body['metadata'].update({
@@ -277,13 +278,13 @@ class CDMIView(APIView):
             pass
         return body
 
-    
-    
+
+
     @csrf_exempt
     def get(self, request, path='/', format=None):
         self.user = request.user
         print self.user
-        
+
         # Add a '/' at the beginning
         path = "/{}".format(path)
         # In CDMI standard a container is defined by the / at the end
@@ -300,7 +301,7 @@ class CDMIView(APIView):
     def put(self, request, path='/', format=None):
         self.user = request.user
         print self.user
-        
+
         # Add a '/' at the beginning
         path = "/{}".format(path)
         # In CDMI standard a container is defined by the / at the end
@@ -317,7 +318,7 @@ class CDMIView(APIView):
     def delete(self, request, path='/', format=None):
         self.user = request.user
         print self.user
-        
+
         # Add a '/' at the beginning
         path = "/{}".format(path)
         # In CDMI standard a container is defined by the / at the end
@@ -339,7 +340,7 @@ class CDMIView(APIView):
             # Incorrectly specified path - object as container or vice versa
             return Response(status=HTTP_404_NOT_FOUND)
         except NoWriteAccessError:
-            return Response(status=HTTP_403_FORBIDDENHTTP_403_FORBIDDEN)
+            return Response(status=HTTP_403_FORBIDDEN)
         else:
             return Response(status=HTTP_204_NO_CONTENT)
 
@@ -372,17 +373,17 @@ class CDMIView(APIView):
         # Update with generic mandatory body fields
         body.update(self._get_genericBodyFields(collection, True))
         body['childrenrange'] = "0-0"
-        
+
         # "X-CDMI-Specification-Version" = "1.1"
         # "Content-Type" = "application/cdmi-container"
-        
+
         child_c = list(collection.get_child_collections())
         child_c = [ "{}/".format(c.name) for c in child_c ]
         child_r = list(collection.get_child_resources())
         child_r = [ "{}".format(c.name) for c in child_r ]
-        
+
         body['children'] = child_c + child_r
-        
+
         return JsonResponse(body, content_type=body["objectType"])
 
     def read_dataObject(self, path):
@@ -419,13 +420,13 @@ class CDMIView(APIView):
         # Fetch the object value
 #         data = redirect('archive:download', path=path).content
         driver = get_driver(resource.url)
-        
+
         # TODO: Improve that for large files. Check a=what CDMI recommends
         # for stream access
         data = ""
         for chk in driver.chunk_content():
             data += chk
-        
+
         if self.request.META.has_key("HTTP_RANGE"):
             start = 0
             end = len(data)
@@ -463,7 +464,7 @@ class CDMIView(APIView):
             return JsonResponse(body,
                                 content_type=body['objectType'])
         else:
-            return Response(data, 
+            return Response(data,
                             content_type=body['mimetype'])
             # redirect should be better but fails with alloyclient.get
 #             return redirect('archive:download', path=path)
@@ -560,13 +561,13 @@ class CDMIView(APIView):
 
 
     def put_dataObject(self, path):
-        
+
         # Check if a collection with the name exists
         collection = Collection.find_by_path(path)
         if collection:
             # Remove trailing '/' from the path
             return self.put_container(path)
-            
+
         parent, name = split(path)
         body = OrderedDict()
         storagePath = path
@@ -577,8 +578,8 @@ class CDMIView(APIView):
         delayed = False
         use_cdmi = self.request.META.has_key("HTTP_X_CDMI_SPECIFICATION_VERSION")
         use_cdmi=True
-        
-        
+
+
         # TODO Check header charset, parse content_type ?
 #         if not use_cdmi:
 #             if self.request.charset == "UTF-8":
@@ -710,7 +711,7 @@ class CDMIView(APIView):
                 blob = Blob.create()
                 content_type = mimetype
                 hasher = hashlib.sha256()
-                
+
                 if settings.COMPRESS_UPLOADS:
                     # Compress the raw_data and store that instead
                     f = StringIO()
@@ -730,7 +731,7 @@ class CDMIView(APIView):
                 blob.update(parts=parts)
 
                 hasher.update(data)
-                
+
                 blob_id = blob.id
                 url = "cassandra://{}".format(blob_id)
                 resource = Resource.find_by_path(storagePath)
