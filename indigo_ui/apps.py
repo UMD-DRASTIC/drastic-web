@@ -16,16 +16,18 @@ limitations under the License.
 """
 
 from django.apps import AppConfig
+from indigo import get_config
+
 
 class IndigoAppConfig(AppConfig):
     name = 'indigo_ui'
     verbose_name = "Indigo"
 
     def ready(self):
-        import activity.signals
         from indigo.models import initialise, Collection
 
-        initialise("indigo")
+        cfg = get_config(None)
+        initialise(cfg.get('KEYSPACE', 'indigo'), hosts=cfg.get('CASSANDRA_HOSTS', ('127.0.0.1', )))
 
         root = Collection.get_root_collection()
         if not root:
