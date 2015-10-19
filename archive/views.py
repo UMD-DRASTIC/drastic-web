@@ -19,11 +19,8 @@ limitations under the License.
 import collections
 import json
 import os
-import requests
-from django.conf import settings
 from django.http import (
     StreamingHttpResponse,
-    HttpResponse,
     Http404
 )
 from django.core.exceptions import PermissionDenied
@@ -34,14 +31,12 @@ from django.shortcuts import (
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
-from archive.client import get_default_client
 from archive.forms import (
     CollectionForm,
     CollectionNewForm,
     ResourceForm,
     ResourceNewForm
 )
-from users.authentication import administrator_required
 
 from activity.signals import (
     new_resource_signal,
@@ -64,6 +59,7 @@ from indigo.metadata import (
     get_collection_keys
 )
 
+
 # TODO: Move this to a helper
 def get_extension(name):
     _, ext = os.path.splitext(name)
@@ -72,6 +68,7 @@ def get_extension(name):
     return "UNKNOWN"
 
 
+# noinspection PyUnusedLocal
 @login_required()
 def home(request):
     return redirect('archive:view', path='')
@@ -82,15 +79,15 @@ def notify_agent(resource_id, event=""):
     client = choose_client()
     client.notify(resource_id, event)
 
+
 ##############################################################################
 # Collection specific view functions
 ##############################################################################
-
 @login_required()
 def resource_view(request, path):
     resource = Resource.find_by_path(path)
     if not resource:
-        raise Http404();
+        raise Http404()
 
     if not resource.user_can(request.user, "read"):
         raise PermissionDenied
@@ -103,8 +100,7 @@ def resource_view(request, path):
         if not p:
             continue
         full = u"{}/{}".format(full, p)
-        paths.append( (p,full,) )
-
+        paths.append((p, full))
 
     ctx = {
         "resource": resource.to_dict(request.user),
@@ -112,6 +108,7 @@ def resource_view(request, path):
         "collection_paths": paths
     }
     return render(request, 'archive/resource/view.html', ctx)
+
 
 @login_required
 def new_resource(request, parent):
@@ -142,9 +139,8 @@ def new_resource(request, parent):
         'delete_access': parent_collection.delete_access,
     }
 
-
     if request.method == 'POST':
-        form = ResourceNewForm(request.POST, files=request.FILES, initial=initial )
+        form = ResourceNewForm(request.POST, files=request.FILES, initial=initial)
         if form.is_valid():
             data = form.cleaned_data
             try:
@@ -153,8 +149,16 @@ def new_resource(request, parent):
 
                 name = data['name']
                 metadata = {}
+
                 for k, v in json.loads(data['metadata']):
-                    metadata[k] = v
+                    if k in metadata:
+                        if isinstance(metadata[k], list):
+                            metadata[k].append(v)
+                        else:
+                            metadata[k] = [metadata[k], v]
+                    else:
+                        metadata[k] = v
+
                 resource = Resource.create(name=name,
                                            container=parent_collection.path(),
                                            metadata=metadata,
@@ -180,7 +184,7 @@ def new_resource(request, parent):
 
             return redirect('archive:view', path=parent_collection.path())
     else:
-        form = ResourceNewForm( initial=initial )
+        form = ResourceNewForm(initial=initial)
 
     ctx = {
         "form": form,
@@ -188,6 +192,7 @@ def new_resource(request, parent):
         "groups": Group.objects.all()
     }
     return render(request, 'archive/resource/new.html', ctx)
+
 
 @login_required
 def edit_resource(request, path):
@@ -208,7 +213,7 @@ def edit_resource(request, path):
         if form.is_valid():
             metadata = {}
             for k, v in json.loads(form.cleaned_data['metadata']):
-                if metadata.has_key(k):
+                if k in metadata:
                     if isinstance(metadata[k], list):
                         metadata[k].append(v)
                     else:
@@ -241,13 +246,12 @@ def edit_resource(request, path):
         if not md:
             metadata = '{"":""}'
 
-        initial_data = {'name':resource.name, 'metadata': metadata,
-            'read_access': resource.read_access,
-            'write_access': resource.write_access,
-            'edit_access': resource.edit_access,
-            'delete_access': resource.delete_access}
+        initial_data = {'name': resource.name, 'metadata': metadata,
+                        'read_access': resource.read_access,
+                        'write_access': resource.write_access,
+                        'edit_access': resource.edit_access,
+                        'delete_access': resource.delete_access}
         form = ResourceForm(initial=initial_data)
-
 
     ctx = {
         "form": form,
@@ -257,6 +261,7 @@ def edit_resource(request, path):
     }
 
     return render(request, 'archive/resource/edit.html', ctx)
+
 
 @login_required
 def delete_resource(request, path):
@@ -270,7 +275,7 @@ def delete_resource(request, path):
     container = resource.get_container()
     if request.method == "POST":
         # TODO: Check if there's a Search index to reset for the resource ?
-        #SearchIndex.reset(coll.id)
+        # SearchIndex.reset(coll.id)
         resource.delete()
         messages.add_message(request, messages.INFO,
                              "The resource '{}' has been deleted".format(resource.name))
@@ -292,8 +297,7 @@ def delete_resource(request, path):
 
 @login_required()
 def navigate(request, path):
-
-    #client     = get_default_client()
+    # client = get_default_client()
     if not path or path == '/':
         collection = Collection.get_root_collection()
     else:
@@ -313,7 +317,7 @@ def navigate(request, path):
         if not p:
             continue
         full = u"{}/{}".format(full, p)
-        paths.append( (p,full,) )
+        paths.append((p, full))
 
     def child_collections():
         return collection.get_child_collections()
@@ -351,6 +355,7 @@ def search(request):
 
     return render(request, 'archive/search.html', ctx)
 
+
 @login_required
 def new_collection(request, parent):
     if parent == '/':
@@ -383,8 +388,16 @@ def new_collection(request, parent):
                 name = data['name']
                 parent = parent_collection.path()
                 metadata = {}
+
                 for k, v in json.loads(data['metadata']):
-                    metadata[k] = v
+                    if k in metadata:
+                        if isinstance(metadata[k], list):
+                            metadata[k].append(v)
+                        else:
+                            metadata[k] = [metadata[k], v]
+                    else:
+                        metadata[k] = v
+
                 collection = Collection.create(name=name,
                                                container=parent,
                                                metadata=metadata,
@@ -405,6 +418,7 @@ def new_collection(request, parent):
     groups = Group.objects.all()
     return render(request, 'archive/new.html', {'form': form, "parent": parent_collection, "groups": groups})
 
+
 @login_required
 def edit_collection(request, path):
     coll = Collection.find_by_path(path)
@@ -417,7 +431,7 @@ def edit_collection(request, path):
         if form.is_valid():
             metadata = {}
             for k, v in json.loads(form.cleaned_data['metadata']):
-                if metadata.has_key(k):
+                if k in metadata:
                     if isinstance(metadata[k], list):
                         metadata[k].append(v)
                     else:
@@ -448,15 +462,16 @@ def edit_collection(request, path):
         if not md:
             metadata = '{"":""}'
 
-        initial_data = {'name':coll.name, 'metadata': metadata,
-            'read_access': coll.read_access,
-            'write_access': coll.write_access,
-            'edit_access': coll.edit_access,
-            'delete_access': coll.delete_access}
+        initial_data = {'name': coll.name, 'metadata': metadata,
+                        'read_access': coll.read_access,
+                        'write_access': coll.write_access,
+                        'edit_access': coll.edit_access,
+                        'delete_access': coll.delete_access}
         form = CollectionForm(initial=initial_data)
 
     groups = Group.objects.all()
     return render(request, 'archive/edit.html', {'form': form, 'collection': coll, 'groups': groups})
+
 
 @login_required
 def delete_collection(request, path):
@@ -470,7 +485,7 @@ def delete_collection(request, path):
         # TODO: Mark collection as inactive...
         Collection.delete_all(coll.path())
         messages.add_message(request, messages.INFO,
-                                     "The collection '{}' has been deleted".format(coll.name))
+                             "The collection '{}' has been deleted".format(coll.name))
         return redirect('archive:view', path='')
 
     return render(request, 'archive/delete.html', {'collection': coll})
@@ -513,9 +528,8 @@ def preview(request, path):
         raise Http404
 
     preview_info = {
-#        "type": "image",
-#        "url": "http://....."
+        # "type": "image",
+        # "url": "http://....."
     }
 
     return render(request, 'archive/preview.html', {'preview': preview_info})
-
