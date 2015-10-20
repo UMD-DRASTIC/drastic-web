@@ -23,6 +23,7 @@ from cStringIO import StringIO
 import zipfile
 import os
 import json
+import logging
 
 from django.shortcuts import redirect
 from django.http import JsonResponse
@@ -31,12 +32,17 @@ from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.translation import ugettext_lazy as _
 from rest_framework.status import (
+    HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_202_ACCEPTED,
     HTTP_204_NO_CONTENT,
+    HTTP_206_PARTIAL_CONTENT,
+    HTTP_302_FOUND,
     HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
+    HTTP_406_NOT_ACCEPTABLE,
+    HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
     HTTP_409_CONFLICT,
     HTTP_412_PRECONDITION_FAILED,
 )
@@ -58,6 +64,10 @@ from rest_framework.permissions import IsAuthenticated
 
 from cdmi.capabilities import SYSTEM_CAPABILITIES
 from cdmi.storage import CDMIDataAccessObject
+from cdmi.models import (
+    CDMIContainer,
+    CDMIResource
+)
 from archive.uploader import CassandraUploadedFile
 from indigo.drivers import get_driver
 from indigo.models.resource import Resource
@@ -65,7 +75,6 @@ from indigo.models.collection import Collection
 from indigo.models.blob import Blob
 from indigo.models.blob import BlobPart
 from indigo.models.user import User
-
 from indigo.util import split
 from indigo.util_archive import (
     path_exists,
@@ -95,7 +104,42 @@ POSSIBLE_DATA_OBJECT_LOCATIONS = [
     'deserializevalue',
     'value'
 ]
-    
+
+# Body fields for reading a data object object using CDMI, the value of the 
+# dictionary can be used to pass parameters
+FIELDS_DATA_OBJECT = OrderedDict([('objectType', None),
+                                  ('objectID', None),
+                                  ('objectName', None),
+                                  ('parentURI', None),
+                                  ('parentID', None),
+                                  ('domainURI', None),
+                                  ('capabilitiesURI', None),
+                                  ('completionStatus', None),
+                                  ('percentComplete', None),
+                                  ('mimetype', None),
+                                  ('metadata', None),
+                                  ('valuetransferencoding', None),
+                                  ('value', None),
+                                  ('valuerange', None)
+                                  ])
+
+# Body fields for reading a container object using CDMI, the value of the 
+# dictionary can be used to pass parameters
+FIELDS_CONTAINER = OrderedDict([('objectType', None),
+                                ('objectID', None),
+                                ('objectName', None),
+                                ('parentURI', None),
+                                ('parentID', None),
+                                ('domainURI', None),
+                                ('capabilitiesURI', None),
+                                ('completionStatus', None),
+                                ('percentComplete', None),
+                                ('metadata', None),
+                                ('childrenrange', None),
+                                ('children', None)
+                               ])
+
+
 # TODO: Move this to a helper
 def get_extension(name):
     _, ext = os.path.splitext(name)
@@ -104,18 +148,42 @@ def get_extension(name):
     return "UNKNOWN"
 
 
-def check_cdmi_version(request):
-    """Check the HTTP request header to see what version the client is
-    supporting. Return the highest version supported by both the client and
-    the server, "" if no match is found or no version provided by the client"""
-    spec_version_raw = request.META.get("HTTP_X_CDMI_SPECIFICATION_VERSION", "")
-    versions_list = [el.strip() for el in spec_version_raw.split(",")]
-    for version in CDMI_SUPPORTED_VERSION:
-        if version in versions_list:
-            return version
-    else:
-        return ""
+def parse_range_header(specifier, len_content):
+    """Parses a range header into a list of pairs (start, stop)"""
+    if not specifier or '=' not in specifier:
+        return []
 
+    ranges = []
+    unit, byte_set = specifier.split('=', 1)
+    unit = unit.strip().lower()
+
+    if unit != "bytes":
+        return []
+
+    for val in byte_set.split(","):
+        val = val.strip()
+        if '-' not in val:
+            return []
+
+        if val.startswith("-"):
+            # suffix-byte-range-spec: this form specifies the last N 
+            # bytes of an entity-body
+            start = len_content + int(val)
+            if start < 0:
+                start = 0
+            stop = len_content
+        else:
+            # byte-range-spec: first-byte-pos "-" [last-byte-pos]
+            start, stop = val.split("-", 1)
+            start = int(start)
+            # Add 1 to make stop exclusive (HTTP spec is inclusive)
+            stop = int(stop)+1 if stop else len_content
+            if start >= stop:
+                return []
+
+        ranges.append((start, stop))
+
+    return ranges
 
 def capabilities(request, path):
     """Read all fields from an existing capability object.
@@ -135,13 +203,13 @@ def capabilities(request, path):
         body["parentURI"] = "/"
         body["parentID"] = "00007E7F0010128E42D87EE34F5A6560"
         body["childrenrange"] = "0-3"
-        body["children"] = ["domain/", "container/", "dataobject/", "queue/"]
-    elif path.startswith('/dataobject'):
-        d = CDMIDataAccessObject({}).dataObjectCapabilities._asdict()
+        body["children"] = ["domain/", "container/", "data_object/", "queue/"]
+    elif path.startswith('/data_object'):
+        d = CDMIDataAccessObject({}).data_objectCapabilities._asdict()
         body['capabilities'] = d
         body["objectType"] = "application/cdmi-capability"
         body["objectID"] = "00007E7F00104BE66AB53A9572F9F51F"
-        body["objectName"] = "dataobject/"
+        body["objectName"] = "data_object/"
         body["parentURI"] = "/"
         body["parentID"] = "00007E7F00104BE66AB53A9572F9F51FE"
         body["childrenrange"] = "0"
@@ -164,16 +232,18 @@ class CDMIContainerRenderer(JSONRenderer):
     """
     Renderer which serializes CDMI container to JSON.
     """
-    media_type = 'application/cdmi-container'
-    format = 'json'
+    media_type = 'application/cdmi-container;application/cdmi-container+json'
+    format = 'cdmic'
+    charset = 'utf-8'
 
 
 class CDMIObjectRenderer(JSONRenderer):
     """
-    Renderer which serializes CDMI container to JSON.
+    Renderer which serializes CDMI data object to JSON.
     """
-    media_type = 'application/cdmi-object'
-    format = 'json'
+    media_type = 'application/cdmi-object; application/cdmi-object+json'
+    format = 'cdmi'
+    charset = 'utf-8'
 
 
 class OctetStreamRenderer(BaseRenderer):
@@ -207,83 +277,41 @@ class CDMIView(APIView):
                         JSONRenderer, OctetStreamRenderer)
     permission_classes = (IsAuthenticated,)
 
+
     def __init__(self, **kwargs):
         super(CDMIView, self).__init__(**kwargs)
         cfg = settings.CDMI_SERVER
         self.api_root = cfg["endpoint"]
         #self.api_root = reverse_lazy('api_cdmi', args=path, request=request)
+        self.logger = logging.getLogger("indigo")
 
-    def _get_genericBodyFields(self, obj, is_container):
-        body = OrderedDict()
-        path = obj.path()
-        if is_container:
-            # Container
-            # Mandatory objectType
-            body['objectType'] = "application/cdmi-container"
-            # Mandatory capabilitiesURI
-            if path != '/':
-                sPath = path + '/'
-            else:
-                sPath = path
-            body['capabilitiesURI'] = ('{0}/cdmi_capabilities/container{1}'
-                                       ''.format(self.api_root, sPath)
-                                       )
+
+    def check_cdmi_version(self):
+        """Check the HTTP request header to see what version the client is
+        supporting. Return the highest version supported by both the client and
+        the server,
+        '' if no match is found or no version provided by the client
+        'HTTP' if the cdmi header is not present"""
+        if not self.request.META.has_key("HTTP_X_CDMI_SPECIFICATION_VERSION"):
+            return("HTTP")
+        spec_version_raw = self.request.META.get("HTTP_X_CDMI_SPECIFICATION_VERSION", "")
+        versions_list = [el.strip() for el in spec_version_raw.split(",")]
+        for version in CDMI_SUPPORTED_VERSION:
+            if version in versions_list:
+                return version
         else:
-            # Data object
-            # Mandatory objectType
-            body['objectType'] = "application/cdmi-object"
-            # Mandatory capabilitiesURI
-            body['capabilitiesURI'] = ('{0}/cdmi_capabilities/dataobject{1}'
-                                       ''.format(self.api_root, path)
-                                       )
-        # Mandatory objectID
-        objectID = obj.id
-        body['objectID'] = objectID#base64.b16encode(objectID)
-        # Set objectName and parentURI
-        objectNameStart = path[:-1].rfind('/') + 1
-        body['objectName'] = path[objectNameStart:]
-        if objectNameStart:
-            parentPath = obj.container
-            if parentPath == '/':
-                body['parentURI'] = parentPath
-            else:
-                body['parentURI'] = parentPath + '/'
-            parent = Collection.find_by_path(parentPath)
-            parentID = parent.id
-            body['parentID'] = parentID #base64.b16encode(parentID)
-        #body['owner'] = self.database.get_owner_path(path)
-        # TODO: add Mandatory domain
-        body['domainURI'] = ('{0}/cdmi_domains/indigo/'.format(self.api_root))
-        # Populate metadata
-        body['metadata'] = obj.get_metadata()
-#         # Update with transient/operational/user metadata
-#         body['metadata'].update(self.database.get_metadata(username,
-#                                                            storagePath,
-#                                                            inherited=True
-#                                                            )
-#                                 )
-        # Update with ACL metadata
-        try:
-            acl_dict = obj.get_acl_metadata()
-            body['metadata'].update(acl_dict)
-            
-#             replicas = self.database.get_replicas_dataObject(username,
-#                                                              storagePath)
-#             body['metadata'].update({
-#                 'cdmi_replicas': len(replicas)
-#             })
-        except AttributeError:
-            # ACLs unsupported by storage backend
-            pass
-        return body
+            return ""
 
-    
-    
+
     @csrf_exempt
     def get(self, request, path='/', format=None):
         self.user = request.user
-        print self.user
-        
+        # Check HTTP Headers for CDMI version or HTTP mode
+        self.cdmi_version = self.check_cdmi_version()
+        if not self.cdmi_version:
+            self.logger.warning("Unsupported CDMI version")
+            return Response(status=HTTP_400_BAD_REQUEST)
+        self.http_mode = self.cdmi_version == "HTTP"
         # Add a '/' at the beginning
         path = "/{}".format(path)
         # In CDMI standard a container is defined by the / at the end
@@ -294,13 +322,18 @@ class CDMIView(APIView):
             else:
                 return self.read_container(path[:-1])
         else:
-            return self.read_dataObject(path)
+            return self.read_data_object(path)
+
 
     @csrf_exempt
     def put(self, request, path='/', format=None):
         self.user = request.user
-        print self.user
-        
+        # Check HTTP Headers for CDMI version or HTTP mode
+        self.cdmi_version = self.check_cdmi_version()
+        if not self.cdmi_version:
+            self.logger.warning("Unsupported CDMI version")
+            return Response(status=HTTP_400_BAD_REQUEST)
+        self.http_mode = self.cdmi_version == "HTTP"
         # Add a '/' at the beginning
         path = "/{}".format(path)
         # In CDMI standard a container is defined by the / at the end
@@ -311,211 +344,262 @@ class CDMIView(APIView):
             else:
                 return self.put_container(path[:-1])
         else:
-            return self.put_dataObject(path)
+            return self.put_data_object(path)
 
     @csrf_exempt
     def delete(self, request, path='/', format=None):
         self.user = request.user
-        print self.user
-        
+        # Check HTTP Headers for CDMI version or HTTP mode
+        self.cdmi_version = self.check_cdmi_version()
+        if not self.cdmi_version:
+            self.logger.warning("Unsupported CDMI version")
+            return Response(status=HTTP_400_BAD_REQUEST)
+        self.http_mode = self.cdmi_version == "HTTP"
         # Add a '/' at the beginning
         path = "/{}".format(path)
         # In CDMI standard a container is defined by the / at the end
         is_container = path.endswith('/')
-        try:
-            if not path or path == '/':
-                # Refuse to delete root container
-                return Response(status=HTTP_409_CONFLICT)
-            elif is_container:
-                # Delete container
-                self.delete_container(path[:-1])
-            else:
-                # Delete data object
-                self.delete_dataObject(path)
-        except NoSuchResourceError:
-            # Path does not exist at all
-            return Response(status=HTTP_404_NOT_FOUND)
-        except (ResourceConflictError, CollectionConflictError):
-            # Incorrectly specified path - object as container or vice versa
-            return Response(status=HTTP_404_NOT_FOUND)
-        except NoWriteAccessError:
-            return Response(status=HTTP_403_FORBIDDENHTTP_403_FORBIDDEN)
+        if not path or path == '/':
+            # Refuse to delete root container
+            return Response(status=HTTP_409_CONFLICT)
+        elif is_container:
+            # Delete container
+            return self.delete_container(path[:-1])
         else:
-            return Response(status=HTTP_204_NO_CONTENT)
+            # Delete data object
+            return self.delete_data_object(path)
 
 
-    def delete_dataObject(self, path):
+    def delete_data_object(self, path):
         resource = Resource.find_by_path(path)
         if not resource:
             collection = Collection.find_by_path(path)
             if collection:
+                self.logger.info("Fail to delete resource at '{}', test if it's a collection".format(path))
                 return self.delete_container(path)
             else:
-                raise NoSuchResourceError
-        container = resource.get_container()
+                self.logger.info("Fail to delete resource at '{}'".format(path))
+                return Response(status=HTTP_404_NOT_FOUND)
+        if not resource.user_can(self.user, "delete"):
+            self.logger.warning("User {} tried to delete resource '{}'".format(self.user, path))
+            return Response(status=HTTP_403_FORBIDDEN)
+
         resource.delete()
+        self.logger.info("The resource '{}' was successfully deleted".format(path))
+        return Response(status=HTTP_204_NO_CONTENT)
+
 
     def delete_container(self, path):
         collection = Collection.find_by_path(path)
         if not collection:
-            raise NoSuchResourceError
+            self.logger.info("Fail to delete collection at '{}'".format(path))
+            return Response(status=HTTP_404_NOT_FOUND)
+        if not collection.user_can(self.user, "delete"):
+            self.logger.warning("User {} tried to delete container '{}'".format(self.user, path))
+            return Response(status=HTTP_403_FORBIDDEN)
         Collection.delete_all(collection.path())
+        self.logger.info("The container '{}' was successfully deleted".format(path))
+        return Response(status=HTTP_204_NO_CONTENT)
+
 
     def read_container(self, path):
         collection = Collection.find_by_path(path)
-
         if not collection:
+            self.logger.info("Fail to read a collection at '{}'".format(path))
             return Response(status=HTTP_404_NOT_FOUND)
+        if not collection.user_can(self.user, "read"):
+            self.logger.warning("User {} tried to read container at '{}'".format(self.user, path))
+            return Response(status=HTTP_403_FORBIDDEN)
 
+        cdmi_container = CDMIContainer(collection, self.api_root)
+        if self.http_mode:
+            # HTTP Request, unsupported
+            self.logger.warning("Read container '{}' using HTTP is undefined".format(path))
+            return Response(status=HTTP_406_NOT_ACCEPTABLE)
+        else:
+            # Read using CDMI
+            return self.read_container_cdmi(cdmi_container)
+
+
+    def read_container_cdmi(self, cdmi_container):
+        path = cdmi_container.get_path()
+        http_accepts = self.request.META.get('HTTP_ACCEPT', '').split(',')
+        http_accepts = set([el.split(";")[0] for el in http_accepts])
+        if not http_accepts.intersection(set(['application/cdmi-container', '*/*'])):
+            self.logger.error("Accept header problem for container '{}' ('{}')".format(path, http_accepts))
+            return Response(status=HTTP_406_NOT_ACCEPTABLE)
+        
+        if self.request.GET:
+            fields = {}
+            for field, value in self.request.GET.items():
+                if field in FIELDS_CONTAINER:
+                    fields[field] = value
+                else:
+                    self.logger.error("Parameter problem for container '{}' ('{} undefined')".format(path, field))
+                    return Response(status=HTTP_406_NOT_ACCEPTABLE)
+        else:
+            fields = FIELDS_CONTAINER
+        
+        # Obtained information in a dictionary
         body = OrderedDict()
-        body['completionStatus'] = "Complete"
-        # Update with generic mandatory body fields
-        body.update(self._get_genericBodyFields(collection, True))
-        body['childrenrange'] = "0-0"
         
-        # "X-CDMI-Specification-Version" = "1.1"
-        # "Content-Type" = "application/cdmi-container"
-        
-        child_c = list(collection.get_child_collections())
-        child_c = [ "{}/".format(c.name) for c in child_c ]
-        child_r = list(collection.get_child_resources())
-        child_r = [ "{}".format(c.name) for c in child_r ]
-        
-        body['children'] = child_c + child_r
-        
-        return JsonResponse(body, content_type=body["objectType"])
+        for field, value in fields.items():
+            get_field = getattr(cdmi_container, 'get_{}'.format(field))
+            # If we send children with a range value we need to update the
+            # childrenrange value
+            # The childrenrange should be created before the children field
+            if field == "children" and value and "childrenrange" in body:
+                body["childrenrange"] = value
+            try:
+                if value:
+                    body[field] = get_field(value)
+                else:
+                    body[field] = get_field()
+            except:
+                self.logger.error("Parameter problem for container '{}' ('{}={}')".format(path, field, value))
+                return Response(status=HTTP_406_NOT_ACCEPTABLE)
+                
+            
+        self.logger.info("{} reads container at '{}' using CDMI".format(self.user.username, path))
+        response = JsonResponse(body,
+                                content_type="application/cdmi-container")
+        response["X-CDMI-Specification-Version"] = "1.1"
+        return response
 
-    def read_dataObject(self, path):
-        # Data object
+
+    def read_data_object(self, path):
+        """Read a resource"""
         resource = Resource.find_by_path(path)
         if not resource:
             collection = Collection.find_by_path(path)
             if collection:
-                # Remove trailing '/' from the path
+                self.logger.info("Fail to read a resource at '{}', test if it's a collection".format(path))
                 return self.read_container(path)
             else:
+                self.logger.info("Fail to read a resource at '{}'".format(path))
                 return Response(status=HTTP_404_NOT_FOUND)
+        if not resource.user_can(self.user, "read"):
+            self.logger.warning("User {} tried to read resource at '{}'".format(self.user, path))
+            return Response(status=HTTP_403_FORBIDDEN)
+        
+        cdmi_resource = CDMIResource(resource, self.api_root)
+        if self.http_mode:
+            return self.read_data_object_http(cdmi_resource)
+        else:
+            return self.read_data_object_cdmi(cdmi_resource)
 
+
+    def read_data_object_cdmi(self, cdmi_resource):
+        path = cdmi_resource.get_path()
+        http_accepts = self.request.META.get('HTTP_ACCEPT', '').split(',')
+        http_accepts = set([el.split(";")[0] for el in http_accepts])
+        if not http_accepts.intersection(set(['application/cdmi-object', '*/*'])):
+            self.logger.error("Accept header problem for resource '{}' ('{}')".format(path, http_accepts))
+            return Response(status=HTTP_406_NOT_ACCEPTABLE)
+        
+        # TODO: multipart/mixed, byte ranges for value, filter metadata
+        if self.request.GET:
+            fields = {}
+            for field, value in self.request.GET.items():
+                if field in FIELDS_DATA_OBJECT.keys():
+                    fields[field] = value
+                else:
+                    self.logger.error("Parameter problem for resource '{}' ('{} undefined')".format(path, field))
+                    return Response(status=HTTP_406_NOT_ACCEPTABLE)
+        else:
+            fields = FIELDS_DATA_OBJECT
+        
+        # Obtained information in a dictionary
         body = OrderedDict()
-        # Update with generic mandatory body fields
-        body.update(self._get_genericBodyFields(resource, False))
+        for field, value in fields.items():
+            get_field = getattr(cdmi_resource, 'get_{}'.format(field))
+            # If we ask the value with a range value we need to update the
+            # valuerange value
+            # The valuerange should be created before the value field
+            if field == "value" and value and "valuerange" in body:
+                body["valuerange"] = value
+            try:
+                if value:
+                    body[field] = get_field(value)
+                else:
+                    body[field] = get_field()
+            except Exception as e:
+                print e
+                self.logger.error("Parameter problem for resource '{}' ('{}={}')".format(path, field, value))
+                return Response(status=HTTP_406_NOT_ACCEPTABLE)
+            
+        self.logger.info("{} reads resource at '{}' using CDMI".format(self.user.username, path))
+        response = JsonResponse(body,
+                                content_type="application/cdmi-object")
+        response["X-CDMI-Specification-Version"] = "1.1"
+        return response
 
-        # Mandatory mimetype
-        body['mimetype'] = body['metadata'].pop('cdmi_mimetype', None)
-        if not body['mimetype']:
-            # Give best guess at mimetype
-            mt = mimetypes.guess_type(path)
-            if mt[0]:
-                body['mimetype'] = mt[0]
-            else:
-                # Interpret as binary data
-                body['mimetype'] = 'application/octet-stream'
 
-        # Mandatory completionStatus
-        body['completionStatus'] = body['metadata'].pop(
-            'cdmi_completionStatus', None
-        )
-
-        # Fetch the object value
-#         data = redirect('archive:download', path=path).content
-        driver = get_driver(resource.url)
-        
-        # TODO: Improve that for large files. Check a=what CDMI recommends
-        # for stream access
-        data = ""
-        for chk in driver.chunk_content():
-            data += chk
-        
+    def read_data_object_http(self, cdmi_resource):
+        path = cdmi_resource.get_path()
         if self.request.META.has_key("HTTP_RANGE"):
-            start = 0
-            end = len(data)
-            if self.request.range.start:
-                start = self.request.range.start
-            if self.request.range.end:
-                end = self.request.range.end
-            data = data[start:end]
+            # Use range header
+            specifier = self.request.META.get("HTTP_RANGE", "")
+            range = parse_range_header(specifier,
+                                       cdmi_resource.get_length())
+            if not range:
+                self.logger.error("Range header parsing failed '{}' for resource '{}'".format(specifier, path))
+                return Response(status=HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE)
+            else:
+                self.logger.info("{} reads resource at '{}' using HTTP, with range '{}'".format(self.user.username, path, range))
+                # Totally inefficient but that's probably not something 
+                # we're gonna use a lot
+                value = cdmi_resource.get_value()
+                data = []
+                for (start, stop) in range:
+                    data.append(value[start:stop])
+                data = ''.join([d for d in data])
+                st = HTTP_206_PARTIAL_CONTENT
         else:
-            # Mandatory valuerange
-            # Have to manually parse parameters
-            start = 0
-            end = len(data)
-            for key in self.request.GET:
-                if key.startswith('value:'):
-                    value = key[len('value:'):]
-                    start, end = map(int, value.split('-'))
-                    end = min(end, len(data))
-                    data = data[start:end]
-
-#         if start != 0 or end != len(data):
-#             self.response.status = "206 Partial Content"
-
-        start = 0
-        end = len(data)
-        # We don't support read/write value range so return the whole thing
-        body['valuerange'] = "{0}-{1}".format(start, end)
-        # Mandatory valuetransferencoding
-        # We'll assume that all data objects are binary
-        # Encode them in base46
-        body['valuetransferencoding'] = "base64"
-        body['value'] = base64.b64encode(data)
-        if (self.request.META.has_key("HTTP_X_CDMI_SPECIFICATION_VERSION") and
-            self.request.META.get('HTTP_ACCEPT', '') == 'application/cdmi-object'):
-            return JsonResponse(body,
-                                content_type=body['objectType'])
-        else:
-            return Response(data, 
-                            content_type=body['mimetype'])
-            # redirect should be better but fails with alloyclient.get
-#             return redirect('archive:download', path=path)
-
+            self.logger.info("{} reads resource at '{}' using HTTP".format(self.user.username, path))
+            data = cdmi_resource.get_value()
+            content_type = cdmi_resource.get_mimetype()
+            st = HTTP_200_OK
+        
+        return Response(data, 
+                        content_type=cdmi_resource.get_mimetype(),
+                        status=st)
 
     def put_container(self, path):
-#         if not username:
-#             self.response.status = "401 Unauthorized"
-#             return
-#         # CREATE or UPDATE Container
+        # Check if the container already exists
+        collection = Collection.find_by_path(path)
+        if collection:
+            # Update
+            if not collection.user_can(self.user, "edit"):
+                self.logger.warning("User {} tried to modify colelction at '{}'".format(self.user, path))
+                return Response(status=HTTP_403_FORBIDDEN)
+            if self.http_mode:
+                # HTTP Request, unsupported
+                self.logger.warning("Update collection '{}' using HTTP is undefined".format(path))
+                return Response(status=HTTP_406_NOT_ACCEPTABLE)
+            res = self.put_container_metadata(collection)
+            return Response(status=res)
+
+        # Create Collection
         parent, name = split(path)
-        body = OrderedDict()
-        try:
-            if name:
-                collection = Collection.create(name=name,
-                                                container=parent)
-                delayed = True
-            else:
-                collection = Collection.get_root_collection()
-                delayed = False
-        except NoSuchCollectionError:
+        parent_collection = Collection.find_by_path(parent)
+        if not parent_collection:
+            self.logger.info("Fail to create a collection at '{}', parent collection doesn't exist".format(path))
             return Response(status=HTTP_404_NOT_FOUND)
-        except ResourceConflictError:
-            pass
-        except CollectionConflictError:
-            # ValidationError -> Try to create the root
-            # Container exists, we update it
-            collection = Collection.find_by_path(path)
-            delayed = False
-#         except NoWriteAccessError:
-#             self.response.status = "403 Forbidden"
-#             return
+        # Check if user can create a new collection in the collection
+        if not parent_collection.user_can(self.user, "write"):
+            self.logger.warning("User {} tried to create new collection at '{}'".format(self.user, path))
+            return Response(status=HTTP_403_FORBIDDEN)
+        
+        body = OrderedDict()
+        collection = Collection.create(name=name,
+                                       container=parent)
+        cdmi_container = CDMIContainer(collection, self.api_root)
+        delayed = False
         res = self.put_container_metadata(collection)
         if res != HTTP_204_NO_CONTENT:
             return Response(status=res)
-        # Update with generic mandatory body fields
-        body.update(self._get_genericBodyFields(collection, True))
-        # There are no children - we only just created the container
-        body['childrenrange'] = "0-0"
-        body['children'] = []
-        cdmi_version = check_cdmi_version(self.request)
-        if cdmi_version:
-            # Client is expecting a serialized CDMI response
-            content_type = body['objectType']
-            # Mandatory completionStatus
-            if delayed:
-                response_status = HTTP_202_ACCEPTED
-                body['completionStatus'] = "Processing"
-            else:
-                response_status = HTTP_201_CREATED
-                body['completionStatus'] = "Complete"
-        else:
+        if self.http_mode:
             # Specification states that:
             #
             #     A response message body may be provided as per RFC 2616.
@@ -530,6 +614,18 @@ class CDMIView(APIView):
                 time.sleep(5)
             response_status = "201 Created"
             body['completionStatus'] = "Complete"
+        else:
+            # CDMI mode
+            for field, value in FIELDS_CONTAINER.items():
+                get_field = getattr(cdmi_container, 'get_{}'.format(field))
+                body[field] = get_field()
+            
+            if delayed:
+                response_status = HTTP_202_ACCEPTED
+                body['completionStatus'] = "Processing"
+            else:
+                response_status = HTTP_201_CREATED
+                body['completionStatus'] = "Complete"
         return JsonResponse(body,
                             content_type=body['objectType'],
                             status=response_status)
@@ -541,129 +637,126 @@ class CDMIView(APIView):
         metadata = {}
         tmp = self.request.content_type.split(";")
         content_type = tmp[0]
-#         ?if (content_type == 'application/cdmi-container'):
         try:
             body = self.request.body
             requestBody = json.loads(body)
         except:
-            return HTTP_400_BAD_REQUEST
-        try:
-            metadata = requestBody.get("metadata", {})
-            if metadata:
-                collection.update(metadata=metadata)
-            return HTTP_204_NO_CONTENT
-        except NoWriteAccessError:
-            return HTTP_403_FORBIDDEN
-#         else:
-#             return HTTP_409_CONFLICT
-#         return
+            requestBody = {}
+        metadata = requestBody.get("metadata", {})
+        if metadata:
+            collection.update(metadata=metadata)
+        return HTTP_204_NO_CONTENT
 
-
-    def put_dataObject(self, path):
+    def create_blob(self, name, content):
+        raw_data = content
+        chunk_size = 1048576
+        file_name = name
+        blob = Blob.create()
+        hasher = hashlib.sha256()
         
-        # Check if a collection with the name exists
-        collection = Collection.find_by_path(path)
-        if collection:
-            # Remove trailing '/' from the path
-            return self.put_container(path)
-            
-        parent, name = split(path)
-        body = OrderedDict()
-        storagePath = path
-        metadata = {}
-        # CREATE or UPDATE data object
+        if settings.COMPRESS_UPLOADS:
+            # Compress the raw_data and store that instead
+            f = StringIO()
+            z = zipfile.ZipFile(f, "w", zipfile.ZIP_DEFLATED)
+            z.writestr("data", raw_data)
+            z.close()
+            data = f.getvalue()
+            f.close()
+        else:
+            data = raw_data
+
+        part = BlobPart.create(blob_id=blob.id,
+                               compressed=settings.COMPRESS_UPLOADS,
+                               content=data)
+        parts = blob.parts or []
+        parts.append(part.id)
+        blob.update(parts=parts)
+
+        hasher.update(data)
+        return blob
+
+
+    def create_data_object(self, parent, name, content, mimetype):
+        blob = self.create_blob(name, content)
+        blob_id = blob.id
+        url = "cassandra://{}".format(blob_id)
+        resource = Resource.create(name=name,
+                                   container=parent,
+                                   url=url,
+                                   size=len(content),
+                                   mimetype=mimetype,
+                                   type=get_extension(name))
+        return resource
+
+
+    def put_data_object_http(self, parent, name, resource):
         tmp = self.request.content_type.split("; ")
         content_type = tmp[0]
-        delayed = False
-        use_cdmi = self.request.META.has_key("HTTP_X_CDMI_SPECIFICATION_VERSION")
-        use_cdmi=True
-        
-        
-        # TODO Check header charset, parse content_type ?
-#         if not use_cdmi:
-#             if self.request.charset == "UTF-8":
-#                 metadata['cdmi_valuetransferencoding'] = "utf-8"
-#             else:
-#                 metadata['cdmi_valuetransferencoding'] = "base64"
-
-#         if "X-CDMI-Partial" in self.request.headers:
-#             metadata['cdmi_completionStatus'] = "Processing"
-#         else:
-#             metadata['cdmi_completionStatus'] = "Complete"
-
         if not content_type:
-            if use_cdmi:
-                # This is mandatory - either application/cdmi-object or
-                # mimetype of data object to create
-                return Response(status=HTTP_400_BAD_REQUEST)
-                # TODO: send diagnostic?
-            else:
-                # use http
-                mimetype = "application/octet-stream"
+            mimetype = "application/octet-stream"
+        elif content_type == "application/cdmi-object":
+            # Should send the X-CDMI-Specification-Version to use this
+            # mimetype
+            return Response(status=HTTP_400_BAD_REQUEST)
+        else:
+            mimetype = content_type
+        content = self.request.body
+        if resource:
+            # Update value
+            # TODO: Delete old blob
+            blob = self.create_blob(name, content)
+            blob_id = blob.id
+            url = "cassandra://{}".format(blob_id)
+            resource.update(url=url,
+                            size=len(content),
+                            mimetype=mimetype,
+                            type=get_extension(name))
+            return Response(status=HTTP_204_NO_CONTENT)
+        else:
+            # Create resource
+            self.create_data_object(parent, name, content, mimetype)
+            return Response(status=HTTP_204_NO_CONTENT)
+
+    def put_data_object_cdmi(self, parent, name, resource):
+        tmp = self.request.content_type.split("; ")
+        content_type = tmp[0]
+        metadata = {}
+        if not content_type:
+            # This is mandatory - either application/cdmi-object or
+            # mimetype of data object to create
+            return Response(status=HTTP_400_BAD_REQUEST)
         if content_type == 'application/cdmi-container':
             # CDMI request performed to create a new container resource
             # but omitting the trailing slash at the end of the URI
             # CDMI standards mandates 400 Bad Request response
             return Response(status=HTTP_400_BAD_REQUEST)
-        elif content_type == 'application/cdmi-object':
-            if not use_cdmi:
-                # Should send the X-CDMI-Specification-Version to use this
-                # mimetype
-                return Response(status=HTTP_400_BAD_REQUEST)
+         # Sent as CDMI JSON
+        try:
+            body = self.request.body
+            request_body = json.loads(body)
+        except Exception as e:
+            return Response(status=HTTP_400_BAD_REQUEST)
 
-            # Sent as CDMI JSON
-            try:
-                body = self.request.body
-                requestBody = json.loads(body)
-            except Exception as e:
-                return Response(status=HTTP_400_BAD_REQUEST)
-            # Check for metadata parameters
-#             for param_name in self.request.params:
-#                 if param_name.startswith('metadata:'):
-#                     k = param_name.split(':', 1)[1]
-#                     try:
-#                         metadata[k] = requestBody['metadata'][k]
-#                     except KeyError:
-#                         pass
-#                 elif param_name == 'mimetype':
-#                     mdk = '{0}_mimetype'.format(METADATA_PREFIX)
-#                     metadata[mdk] = requestBody['mimetype']
-            metadata = requestBody.get("metadata", {})
-
-            valueType = [key
-                         for key in requestBody
-                         if key in POSSIBLE_DATA_OBJECT_LOCATIONS
-                         ]
-            # Sanity check request body
-            if not valueType:
-                # No data specified
-                # Check for metadata update
-                if metadata:
-                    try:
-                        resource = Resource.find_by_path(path)
-                        resource.update(metadata=metadata)
-                        return JsonResponse(metadata, status=HTTP_204_NO_CONTENT )
-                    except NoWriteAccessError:
-                        return Response(status=HTTP_403_FORBIDDEN)
-                else:
-                    # To update metadata without data must supply metadata
-                    # parameters
-                    return Response(status=HTTP_400_BAD_REQUEST)
-            elif len(valueType) > 1:
-                # Only one of these fields shall be specified in any given
-                # operation.
-                    return Response(status=HTTP_400_BAD_REQUEST)
-            elif valueType[0] != 'value':
-                # Only 'value' is supported at the present time
-                    return Response(status=HTTP_400_BAD_REQUEST)
-            # CDMI specification mandates that text/plain should be used
-            # where mimetype is absent
-            mimetype = requestBody.get('mimetype', 'text/plain')
-            # Assemble metadata
-            if not metadata:
-                metadata.update(requestBody.get('metadata', {}))
-            content = requestBody.get(valueType[0])
-            encoding = requestBody.get('valuetransferencoding', 'utf-8')
+        value_type = [key
+                      for key in request_body
+                      if key in POSSIBLE_DATA_OBJECT_LOCATIONS
+                      ]
+        if not value_type and not resource:
+            # We need a value to create a resource
+            return Response(status=HTTP_400_BAD_REQUEST)
+        if len(value_type) > 1:
+            # Only one of these fields shall be specified in any given
+            # operation.
+            return Response(status=HTTP_400_BAD_REQUEST)
+        elif value_type and value_type[0] != 'value':
+            # Only 'value' is supported at the present time
+            return Response(status=HTTP_400_BAD_REQUEST)
+        # CDMI specification mandates that text/plain should be used
+        # where mimetype is absent
+        mimetype = request_body.get('mimetype', 'text/plain')
+        if value_type:
+            content = request_body.get(value_type[0])
+            encoding = request_body.get('valuetransferencoding', 'utf-8')
             if encoding == "base64":
                 try:
                     content = base64.b64decode(content)
@@ -672,120 +765,75 @@ class CDMIView(APIView):
             elif encoding != "utf-8":
                 return Response(status=HTTP_400_BAD_REQUEST)
             metadata['cdmi_valuetransferencoding'] = encoding
-        else:
-            # Sent as non-CDMI
-            mimetype = content_type
-            content = self.request.body
-            # TODO: Assemble metadata from HTTP headers
-        start = None
-        end = None
-#         # Range ?
-#         if self.request.range:
-#             start = 0
-#             end = len(content)
-#             if self.request.range.start:
-#                 start = self.request.range.start
-#             if self.request.range.end:
-#                 end = self.request.range.end
-
-        metadata['cdmi_mimetype'] = mimetype
-        # Find out if object will be created so that correct HTTP
-        # response code can be returned
-        created = not(is_resource(storagePath))
-        # Store the data object
-        try:
-            if start and end:
-                pass
-                # Update a range of the file ??
-#                 delayed = self.database.update_dataObject(username,
-#                                                           storagePath,
-#                                                           content,
-#                                                           metadata,
-#                                                           start,
-#                                                           end)
-            else:
-                raw_data = content
-                chunk_size = 1048576
-                file_name = name
-                blob = Blob.create()
-                content_type = mimetype
-                hasher = hashlib.sha256()
-                
-                if settings.COMPRESS_UPLOADS:
-                    # Compress the raw_data and store that instead
-                    f = StringIO()
-                    z = zipfile.ZipFile(f, "w", zipfile.ZIP_DEFLATED)
-                    z.writestr("data", raw_data)
-                    z.close()
-                    data = f.getvalue()
-                    f.close()
-                else:
-                    data = raw_data
-
-                part = BlobPart.create(blob_id=blob.id,
-                                       compressed=settings.COMPRESS_UPLOADS,
-                                       content=data)
-                parts = blob.parts or []
-                parts.append(part.id)
-                blob.update(parts=parts)
-
-                hasher.update(data)
-                
+            if resource:
+                # Update value
+                # TODO: Delete old blob
+                blob = self.create_blob(name, content)
                 blob_id = blob.id
                 url = "cassandra://{}".format(blob_id)
-                resource = Resource.find_by_path(storagePath)
-                if resource:
-                    resource.update(url=url,
-                                    size=len(content),
-                                    mimetype=mimetype,
-                                    type=get_extension(name))
-                else:
-                    resource = Resource.create(name=name,
-                                               container=parent,
-                                               url=url,
-                                               size=len(content),
-                                               mimetype=mimetype,
-                                               type=get_extension(name))
-        except (NoSuchCollectionError,
-                CollectionConflictError,
-                NoSuchResourceError):
-            return Response(status=HTTP_404_NOT_FOUND)
-        except NoWriteAccessError:
-            return Response(status=HTTP_403_FORBIDDEN)
+                resource.update(url=url,
+                                size=len(content),
+                                mimetype=mimetype,
+                                type=get_extension(name))
+            else:
+                # Create resource
+                resource = self.create_data_object(parent, name, content, mimetype)        
+        cdmi_resource = CDMIResource(resource, self.api_root)
+        # Assemble metadata
+        metadata.update(request_body.get('metadata', {}))
+        resource.update(metadata=metadata)
 
-        if (use_cdmi):
-            response_content_type = 'application/cdmi-object'
-            if created:
-                if delayed:
-                    response_status = "202 Accepted"
-                    body['completionStatus'] = "Processing"
-                else:
-                    response_status = "201 Created"
-                    body['completionStatus'] = "Complete"
-                # Update with generic mandatory body fields
-                body.update(self._get_genericBodyFields(resource, False))
-                # Mandatory mimetype
-                body['mimetype'] = mimetype
-                return JsonResponse(body,
-                                    content_type=response_content_type,
-                                    status=response_status)
-            else:
-                # No response message mandated by CDMI Spec 8.6.7
-                return Response(status=HTTP_204_NO_CONTENT)
-            # Update with generic mandatory body fields
-            body.update(self._get_genericBodyFields(username, path, False))
-            # Mandatory mimetype
-            body['mimetype'] = mimetype
-            return JsonResponse(body)
+        body = OrderedDict()
+        for field, value in FIELDS_DATA_OBJECT.items():
+            get_field = getattr(cdmi_resource, 'get_{}'.format(field))
+            # If we ask the value with a range value we need to update the
+            # valuerange value
+            # The valuerange should be created before the value field
+            if field == "value" and value and "valuerange" in body:
+                body["valuerange"] = value
+            try:
+                body[field] = get_field()
+            except Exception as e:
+                print e
+                self.logger.error("Parameter problem for resource '{}' ('{}={}')".format(cdmi_resource.get_path(), field, value))
+                return Response(status=HTTP_406_NOT_ACCEPTABLE)
+        
+        return JsonResponse(body,
+                            content_type='application/cdmi-object',
+                            status=HTTP_201_CREATED)
+
+
+    def put_data_object(self, path):
+        # Check if a collection with the name exists
+        collection = Collection.find_by_path(path)
+        if collection:
+            # Try to put a data_object when a collection of the same name
+            # already exists
+            self.logger.info("Impossible to create a new resource, the collection '{}' already exists, try to update it".format(path))
+            return self.put_container(path)
+
+        parent, name = split(path)
+        # Check if the resource already exists
+        resource = Resource.find_by_path(path)
+        # Check permissions
+        if resource:
+            # Update Resource
+            if not resource.user_can(self.user, "edit"):
+                self.logger.warning("User {} tried to modify resource at '{}'".format(self.user, path))
+                return Response(status=HTTP_403_FORBIDDEN)
         else:
-            # Does not accept CDMI - cannot return "202 Accepted"
-            # Wait until complete
-            while not is_resource(storagePath):
-                # Wait for 5 seconds
-                time.sleep(5)
-            if created:
-                response_status = "201 Created"
-            else:
-                response_status = "204 No Content"
-            # No response message
-            return Response(status=response_status)
+            # Create Resource
+            parent_collection = Collection.find_by_path(parent)
+            if not parent_collection:
+                self.logger.info("Fail to create a resource at '{}', collection doesn't exist".format(path))
+                return Response(status=HTTP_404_NOT_FOUND)
+            # Check if user can create a new resource in the collection
+            if not parent_collection.user_can(self.user, "write"):
+                self.logger.warning("User {} tried to create new resource at '{}'".format(self.user, path))
+                return Response(status=HTTP_403_FORBIDDEN)
+        # All permissions are checked, we can proceed to create/update
+        
+        if self.http_mode:
+            return self.put_data_object_http(parent, name, resource)
+        else:
+            return self.put_data_object_cdmi(parent, name, resource)

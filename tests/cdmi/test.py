@@ -11,7 +11,7 @@ import requests
 class CDMITestCase(unittest.TestCase):
 
     def setUp(self):
-        self.api_url = "http://127.0.0.1/cdmi"
+        self.api_url = "http://127.0.0.1/api/cdmi"
 
     def get(self, path, headers={}):
         r = requests.get("{}{}".format(self.api_url,
