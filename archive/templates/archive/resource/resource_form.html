@@ -25,7 +25,8 @@
         {% if action == 'edit' %}
             File: {{resource.file_name}}
         {% else %}
-           <input type="file" name="file" onchange="$('#name').val(this.value)"/>
+            {# We remove the "fakepath" bit because Chrome is odd. See: http://davidwalsh.name/fakepath #}
+           <input type="file" name="file" onchange="$('#name').val(this.value.replace('C:\\fakepath\\', ''))"/>
         {% endif %}
     </div>
 

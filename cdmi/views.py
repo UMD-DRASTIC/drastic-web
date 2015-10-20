@@ -90,7 +90,7 @@ from indigo.models.errors import (
 )
 
 # List of supported version (In order so the first to be picked up is the most
-# recent one 
+# recent one
 CDMI_SUPPORTED_VERSION = ["1.1", "1.0.2"]
 
 # Possible sections of the CDMI request body where the data object content
@@ -187,7 +187,7 @@ def parse_range_header(specifier, len_content):
 
 def capabilities(request, path):
     """Read all fields from an existing capability object.
-    
+
     TODO: This part of the specification isn't implemented properly according
     to the specification, capabilities should be a special kind of containers
     with ObjectID"""
@@ -247,7 +247,7 @@ class CDMIObjectRenderer(JSONRenderer):
 
 
 class OctetStreamRenderer(BaseRenderer):
-    
+
     media_type = 'application/octet-stream'
     format = 'bin'
 
@@ -273,7 +273,7 @@ class CassandraAuthentication(BasicAuthentication):
 
 class CDMIView(APIView):
     authentication_classes = (CassandraAuthentication,)
-    renderer_classes = (CDMIContainerRenderer, CDMIObjectRenderer, 
+    renderer_classes = (CDMIContainerRenderer, CDMIObjectRenderer,
                         JSONRenderer, OctetStreamRenderer)
     permission_classes = (IsAuthenticated,)
 
@@ -312,6 +312,7 @@ class CDMIView(APIView):
             self.logger.warning("Unsupported CDMI version")
             return Response(status=HTTP_400_BAD_REQUEST)
         self.http_mode = self.cdmi_version == "HTTP"
+
         # Add a '/' at the beginning
         path = "/{}".format(path)
         # In CDMI standard a container is defined by the / at the end
@@ -334,6 +335,7 @@ class CDMIView(APIView):
             self.logger.warning("Unsupported CDMI version")
             return Response(status=HTTP_400_BAD_REQUEST)
         self.http_mode = self.cdmi_version == "HTTP"
+
         # Add a '/' at the beginning
         path = "/{}".format(path)
         # In CDMI standard a container is defined by the / at the end
@@ -467,6 +469,7 @@ class CDMIView(APIView):
         return response
 
 
+
     def read_data_object(self, path):
         """Read a resource"""
         resource = Resource.find_by_path(path)
@@ -537,6 +540,7 @@ class CDMIView(APIView):
 
     def read_data_object_http(self, cdmi_resource):
         path = cdmi_resource.get_path()
+
         if self.request.META.has_key("HTTP_RANGE"):
             # Use range header
             specifier = self.request.META.get("HTTP_RANGE", "")
@@ -564,6 +568,7 @@ class CDMIView(APIView):
         return Response(data, 
                         content_type=cdmi_resource.get_mimetype(),
                         status=st)
+
 
     def put_container(self, path):
         # Check if the container already exists
@@ -717,6 +722,7 @@ class CDMIView(APIView):
             self.create_data_object(parent, name, content, mimetype)
             return Response(status=HTTP_204_NO_CONTENT)
 
+
     def put_data_object_cdmi(self, parent, name, resource):
         tmp = self.request.content_type.split("; ")
         content_type = tmp[0]
@@ -803,6 +809,7 @@ class CDMIView(APIView):
                             status=HTTP_201_CREATED)
 
 
+
     def put_data_object(self, path):
         # Check if a collection with the name exists
         collection = Collection.find_by_path(path)
@@ -811,6 +818,7 @@ class CDMIView(APIView):
             # already exists
             self.logger.info("Impossible to create a new resource, the collection '{}' already exists, try to update it".format(path))
             return self.put_container(path)
+
 
         parent, name = split(path)
         # Check if the resource already exists
