@@ -119,6 +119,12 @@ LOGIN_REDIRECT_URL = '/'
 #INCLUDE_AUTH_URLS = True
 #INCLUDE_REGISTER_URL = True
 
+# LDAP server configuration.
+AUTH_LDAP_SERVER_URI = os.getenv('AUTH_LDAP_SERVER_URI', None) # ldap://ldap.example.com
+AUTH_LDAP_USER_DN_TEMPLATE = os.getenv('AUTH_LDAP_USER_DN_TEMPLATE', None) # "uid=%(user)s,ou=users,dc=example,dc=com"
+# NOTE: AUTHENTICATION_BACKENDS NOT USED, see users/views.py
+
+
 LANGUAGE_CODE = 'en-gb'
 TIME_ZONE = 'UTC'
 USE_I18N = True
@@ -171,5 +177,5 @@ REST_FRAMEWORK = {
 #         'rest_framework.permissions.AllowAny'
     #]
 }
-# 
+#
 # REST_SESSION_LOGIN = False

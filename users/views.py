@@ -4,8 +4,10 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.contrib import messages
+from django.conf import settings
 
 from indigo.models import User
+import ldap
 
 from users.forms import UserForm
 
@@ -57,7 +59,7 @@ def userlogin(request):
         if not user:
             errors = invalid
         else:
-            if not user.authenticate(password):
+            if not user.authenticate(password) and not ldapAuthenticate(username, password):
                 errors = invalid
 
         if not errors:
@@ -70,6 +72,25 @@ def userlogin(request):
 
 
     return render(request, 'users/login.html', ctx)
+
+def ldapAuthenticate(username, password):
+    if settings.AUTH_LDAP_SERVER_URI is None:
+        return False
+
+    if settings.AUTH_LDAP_USER_DN_TEMPLATE is None:
+        return False
+
+    try:
+        connection = ldap.initialize(settings.AUTH_LDAP_SERVER_URI)
+        connection.protocol_version = ldap.VERSION3
+        user_dn = settings.AUTH_LDAP_USER_DN_TEMPLATE % {"user": username}
+        connection.simple_bind_s(user_dn, password)
+        return True
+    except ldap.INVALID_CREDENTIALS:
+        return False
+    except ldap.SERVER_DOWN:
+        # TODO: Return error instead of none
+        return False
 
 
 @login_required
@@ -102,10 +123,10 @@ def edit_user(request, id):
     print id, user
     if not user:
         raise Http404()
-    
+
     if not request.user.administrator:
         raise PermissionDenied
-    
+
     if request.method == "POST":
         form = UserForm(request.POST)
         if form.is_valid():
@@ -127,7 +148,7 @@ def edit_user(request, id):
                         "password": user.password
                        }
         form = UserForm(initial=initial_data)
-    
+
     ctx = {
         "form": form,
         "user": user,
