@@ -19,10 +19,10 @@ Pygments==2.0.2
 pytz==2015.2
 PyYAML==3.11
 shortuuid==0.4.2
-gunicorn
+gunicorn==19.3.0
 crcmod==1.7
 paho-mqtt==1.1
-python-ldap
+python-ldap==2.4.22
 
 #pip install markdown       # Markdown support for the browsable API.
 #pip install django-filter  # Filtering support
