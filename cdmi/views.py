@@ -527,7 +527,6 @@ class CDMIView(APIView):
                 else:
                     body[field] = get_field()
             except Exception as e:
-                print e
                 self.logger.error("Parameter problem for resource '{}' ('{}={}')".format(path, field, value))
                 return Response(status=HTTP_406_NOT_ACCEPTABLE)
             
@@ -576,7 +575,7 @@ class CDMIView(APIView):
         if collection:
             # Update
             if not collection.user_can(self.user, "edit"):
-                self.logger.warning("User {} tried to modify colelction at '{}'".format(self.user, path))
+                self.logger.warning("User {} tried to modify collection at '{}'".format(self.user, path))
                 return Response(status=HTTP_403_FORBIDDEN)
             if self.http_mode:
                 # HTTP Request, unsupported
@@ -800,7 +799,6 @@ class CDMIView(APIView):
             try:
                 body[field] = get_field()
             except Exception as e:
-                print e
                 self.logger.error("Parameter problem for resource '{}' ('{}={}')".format(cdmi_resource.get_path(), field, value))
                 return Response(status=HTTP_406_NOT_ACCEPTABLE)
         
@@ -840,7 +838,6 @@ class CDMIView(APIView):
                 self.logger.warning("User {} tried to create new resource at '{}'".format(self.user, path))
                 return Response(status=HTTP_403_FORBIDDEN)
         # All permissions are checked, we can proceed to create/update
-        
         if self.http_mode:
             return self.put_data_object_http(parent, name, resource)
         else:

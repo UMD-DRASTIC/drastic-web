@@ -105,7 +105,7 @@ class CDMIContainer(object):
         # A container in CDMI has a '/' at the end but we don't (except for the
         # root)
         parent_path = self.collection.container
-        if parent_path != '/':
+        if parent_path != '/' and parent_path != "null":
             parent_path = "{}/".format(parent_path)
         return "{}".format(parent_path)
 

@@ -35,6 +35,7 @@ urlpatterns = [
     # All routes from here are to be re-routed to the agent by using
     # nginx to re-route calls as an internal redirect
     url(r'^api/cdmi/', include('cdmi.urls', namespace="cdmi")),
+    url(r'^api/admin/', include('admin.urls', namespace="admin")),
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

@@ -56,7 +56,7 @@ INSTALLED_APPS = (
     'nodes',
     'users',
     #'s3',
-    'cdmi'
+    'cdmi',
 )
 
 DEFAULT_APP_CONFIG = 'indigo_ui.IndigoAppConfig'
@@ -100,6 +100,10 @@ CDMI_SERVER = {
     "endpoint": "http://127.0.0.1/api/cdmi",
     "username": "",
     "password": "",
+}
+
+ADMIN_SERVER = {
+    "endpoint": "http://127.0.0.1/api/admin",
 }
 
 WSGI_APPLICATION = 'indigo_ui.wsgi.application'
