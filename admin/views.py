@@ -27,14 +27,23 @@ from rest_framework.authentication import (
 from django.utils.translation import ugettext_lazy as _
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+import json
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_206_PARTIAL_CONTENT,
+    HTTP_400_BAD_REQUEST,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT
+)
 
+from indigo.models.group import Group
 from indigo.models.user import User
 
 
- 
 class CassandraAuthentication(BasicAuthentication):
     www_authenticate_realm = 'Indigo'
- 
+
     def authenticate_credentials(self, userid, password):
         """
         Authenticate the userid and password against username and password.
@@ -46,16 +55,298 @@ class CassandraAuthentication(BasicAuthentication):
             raise exceptions.AuthenticationFailed(_('Invalid username/password.'))
         return (user, None)
 
+
 @api_view(['GET'])
 @authentication_classes((CassandraAuthentication,))
 @permission_classes((IsAuthenticated,))
 def authenticate(request):
-    return Response({"message": "User {} is authenticated".format(request.user.username)})
+    msg = "User {} is authenticated".format(request.user.username)
+    return Response({"message": msg})
+
+
+@api_view(['GET', 'DELETE', 'PUT'])
+@authentication_classes((CassandraAuthentication,))
+@permission_classes((IsAuthenticated,))
+def group(request, groupname):
+    if request.method == 'GET':
+        return ls_group(request, groupname)
+    elif request.method == 'DELETE':
+        return delete_group(request, groupname)
+    elif request.method == 'PUT':
+        return modify_group(request, groupname)
+
+
+@api_view(['GET', 'POST'])
+@authentication_classes((CassandraAuthentication,))
+@permission_classes((IsAuthenticated,))
+def groups(request):
+    if request.method == 'GET':
+        return Response([u.name for u in Group.objects.all()])
+    elif request.method == 'POST':
+        return create_group(request)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@authentication_classes((CassandraAuthentication,))
+@permission_classes((IsAuthenticated,))
+def user(request, username):
+    if request.method == 'GET':
+        return ls_user(request, username)
+    elif request.method == 'PUT':
+        return modify_user(request, username)
+    elif request.method == 'DELETE':
+        return delete_user(request, username)
+
+
+def create_group(request):
+    """Expecting json in the body:
+    { "username": username,
+      "groupname": groupname }
+    """
+    try:
+        body = request.body
+        request_body = json.loads(body)
+    except:
+        return Response("Invalid JSON body", status=HTTP_400_BAD_REQUEST)
+    try:
+        groupname = request_body['groupname']
+    except KeyError:
+        return Response("Missing groupname", status=HTTP_400_BAD_REQUEST)
+    group = Group.find(groupname)
+    if group:
+        return Response("Group already exists", status=HTTP_409_CONFLICT)
+    try:
+        username = request_body['username']
+    except KeyError:
+        return Response("Missing username", status=HTTP_400_BAD_REQUEST)
+    group = Group.create(name=groupname,
+                         owner=username)
+    return Response(group.to_dict(), status=HTTP_201_CREATED)
+
+
+def create_user(request):
+    """Expecting json in the body:
+    { "username": username,
+      "password": password,
+      "email": email,
+      "administrator": is_admin }
+    """
+    try:
+        body = request.body
+        request_body = json.loads(body)
+    except:
+        return Response("Invalid JSON body", status=HTTP_400_BAD_REQUEST)
+    try:
+        username = request_body['username']
+    except KeyError:
+        return Response("Missing username", status=HTTP_400_BAD_REQUEST)
+    user = User.find(username)
+    if user:
+        return Response("User already exists", status=HTTP_409_CONFLICT)
+    try:
+        email = request_body['email']
+    except KeyError:
+        return Response("Missing email", status=HTTP_400_BAD_REQUEST)
+    try:
+        password = request_body['password']
+    except KeyError:
+        return Response("Missing password", status=HTTP_400_BAD_REQUEST)
+    administrator = request_body.get('administrator', False)
+    user = User.create(username=username,
+                       password=password,
+                       email=email,
+                       administrator=administrator)
+    return Response(user.to_dict(), status=HTTP_201_CREATED)
+
+
+def delete_group(request, groupname):
+    """Delete a group"""
+    group = Group.find(groupname)
+    if not group:
+        return Response("Group {} doesn't exists".format(groupname),
+                        status=HTTP_404_NOT_FOUND)
+    group.delete()
+    return Response("Group {} has been deleted".format(groupname),
+                    status=HTTP_200_OK)
+
+
+def delete_user(request, username):
+    """Delete a user"""
+    user = User.find(username)
+    if not user:
+        return Response("User {} doesn't exists".format(username),
+                        status=HTTP_404_NOT_FOUND)
+    user.delete()
+    return Response("User {} has been deleted".format(username),
+                    status=HTTP_200_OK)
+
+
+def add_user_group(group, ls_users):
+    # Check that all users exists
+    not_added = []
+    added = []
+    already_there = []
+    for username in ls_users:
+        user = User.find(username)
+        if user:
+            if group.id not in user.groups:
+                user.groups.append(group.id)
+                user.update(groups=user.groups)
+                added.append(username)
+            else:
+                already_there.append(username)
+        else:
+            not_added.append(username)
+    msg = []
+
+    if added:
+        msg.append("Added {} to the group {}".format(
+            ", ".join(added),
+            group.name))
+    if already_there:
+        if len(already_there) == 1:
+            verb = "is"
+        else:
+            verb = "are"
+        msg.append("{} {} already in the group {}".format(
+            ", ".join(already_there),
+            verb,
+            group.name))
+    if not_added:
+        msg.append("{} doesn't exist".format(", ".join(not_added)))
+    msg = ", ".join(msg)
+    if not_added or already_there:
+        return Response(msg, status=HTTP_206_PARTIAL_CONTENT)
+    else:
+        return Response(msg, status=HTTP_200_OK)
+
+
+def rm_user_group(group, ls_users):
+    not_exist = []
+    removed = []
+    not_there = []
+    for username in ls_users:
+        user = User.find(username)
+        if user:
+            if group.id in user.groups:
+                user.groups.remove(group.id)
+                user.update(groups=user.groups)
+                removed.append(username)
+            else:
+                not_there.append(username)
+        else:
+            not_exist.append(username)
+    msg = []
+
+    if removed:
+        msg.append("Removed {} from the group {}".format(", ".join(removed),
+                                                         group.name))
+    if not_there:
+        if len(not_there) == 1:
+            verb = "isn't"
+        else:
+            verb = "aren't"
+        msg.append("{} {} in the group {}".format(", ".join(not_there),
+                                                  verb,
+                                                  group.name))
+    if not_exist:
+        msg.append("{} doesn't exist".format(", ".join(not_exist)))
+    msg = ", ".join(msg)
+    if not_there or not_exist:
+        return Response(msg, status=HTTP_206_PARTIAL_CONTENT)
+    else:
+        return Response(msg, status=HTTP_200_OK)
+
+
+def modify_group(request, groupname):
+    """Expecting json in the body:
+    { "groupname": groupname, # Optional
+      "add_users": [user1, user2, ...],
+      "rm_users": [user1, user2, ...]
+    }
+    """
+    try:
+        body = request.body
+        request_body = json.loads(body)
+    except:
+        return Response("Invalid JSON body", status=HTTP_400_BAD_REQUEST)
+    group = Group.find(groupname)
+    if not group:
+        return Response("Group {} doesn't exists".format(groupname),
+                        status=HTTP_404_NOT_FOUND)
+
+    # Add users to group
+    if 'add_users' in request_body:
+        return add_user_group(group, request_body['add_users'])
+    # Remove users from group
+    if 'rm_users' in request_body:
+        return rm_user_group(group, request_body['rm_users'])
+
+
+def ls_group(request, groupname):
+    # TODO check if groupname is valid to test ?
+    group = Group.find(groupname)
+    try:
+        return Response(group.to_dict())
+    except:
+        return Response("Group {} not found".format(groupname),
+                        status=HTTP_404_NOT_FOUND)
+
+
+def modify_user(request, username=""):
+    """Expecting json in the body:
+    { "username": username,
+      "password": password,
+      "email": email,
+      "administrator": is_admin,
+      "active": is_active}
+    """
+    try:
+        body = request.body
+        request_body = json.loads(body)
+    except:
+        return Response("Invalid JSON body", status=HTTP_400_BAD_REQUEST)
+    if username is None:
+        try:
+            username = request_body['username']
+        except KeyError:
+            return Response("Missing username", status=HTTP_400_BAD_REQUEST)
+    user = User.find(username)
+    if not user:
+        return Response("User {} doesn't exists".format(username),
+                        status=HTTP_404_NOT_FOUND)
+    if 'email' in request_body:
+        user.update(email=request_body['email'])
+    if 'password' in request_body:
+        user.update(password=request_body['password'])
+    if 'administrator' in request_body:
+        user.update(administrator=request_body['administrator'])
+    if 'active' in request_body:
+        user.update(active=request_body['active'])
+    return Response(user.to_dict(), status=HTTP_200_OK)
+
+
+def ls_user(request, username):
+    # TODO check if username is valid to test ?
+    user = User.find(username)
+    if user:
+        return Response(user.to_dict(), status=HTTP_200_OK)
+    else:
+        return Response("User {} not found".format(username),
+                        status=HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET', 'POST'])
+@authentication_classes((CassandraAuthentication,))
+@permission_classes((IsAuthenticated,))
+def users(request):
+    if request.method == 'GET':
+        return Response([u.username for u in User.objects.all()])
+    elif request.method == 'POST':
+        return create_user(request)
 
 
 @api_view(['GET'])
 @authentication_classes((CassandraAuthentication,))
 def home(request):
-    print request.user
     return Response({"message": "Hello for today! See you tomorrow!"})
-

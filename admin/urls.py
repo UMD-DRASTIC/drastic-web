@@ -26,6 +26,10 @@ from . import views
 
 urlpatterns = [
    url(r'^authenticate$', views.authenticate),
+   url(r'^users/(?P<username>.*)', views.user),
+   url(r'^users', views.users),
+   url(r'^groups/(?P<groupname>.*)', views.group),
+   url(r'^groups', views.groups),
    url(r'^$', views.home),
    
 ]
