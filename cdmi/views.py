@@ -596,8 +596,11 @@ class CDMIView(APIView):
             return Response(status=HTTP_403_FORBIDDEN)
         
         body = OrderedDict()
-        collection = Collection.create(name=name,
-                                       container=parent)
+        try:
+            collection = Collection.create(name=name,
+                                           container=parent)
+        except ResourceConflictError:
+            return Response(status=HTTP_409_CONFLICT)
         cdmi_container = CDMIContainer(collection, self.api_root)
         delayed = False
         res = self.put_container_metadata(collection)
@@ -816,7 +819,6 @@ class CDMIView(APIView):
             # already exists
             self.logger.info("Impossible to create a new resource, the collection '{}' already exists, try to update it".format(path))
             return self.put_container(path)
-
 
         parent, name = split(path)
         # Check if the resource already exists
