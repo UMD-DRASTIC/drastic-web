@@ -169,7 +169,6 @@ def new_resource(request, parent):
                                            url=url,
                                            size=data['file'].size,
                                            mimetype=data['file'].content_type,
-                                           file_name=data['file'].name,
                                            type=get_extension(data['file'].name))
 
                 notify_agent(resource.path(), "resource:new")
@@ -512,7 +511,7 @@ def download(request, path):
 
     resp = StreamingHttpResponse(streaming_content=driver.chunk_content(),
                                  content_type=resource.mimetype)
-    resp['Content-Disposition'] = 'attachment; filename="{}"'.format(resource.file_name)
+    resp['Content-Disposition'] = 'attachment; filename="{}"'.format(resource.name)
 
     return resp
 

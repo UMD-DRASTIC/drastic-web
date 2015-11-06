@@ -657,7 +657,6 @@ class CDMIView(APIView):
     def create_blob(self, name, content):
         raw_data = content
         chunk_size = 1048576
-        file_name = name
         blob = Blob.create()
         hasher = hashlib.sha256()
         
