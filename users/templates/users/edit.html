@@ -1,10 +1,10 @@
 {% extends "archive/base.html" %}
 
-{% block title %}Edit User - {{user.username}}{% endblock title %}
+{% block title %}Edit User - {{user.name}}{% endblock title %}
 
 {% block main_content %}
 
-<h2>Edit User - {{user.username}}
+<h2>Edit User - {{user.name}}
     <a class="pull-right btn btn-default" href="{% url 'users:home' %}">
     &laquo; Back to user management
     </a>

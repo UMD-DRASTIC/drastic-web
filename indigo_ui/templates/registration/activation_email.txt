@@ -1,5 +1,5 @@
 
-Hello {{ user.username }},
+Hello {{ user.name }},
 
 You have recently created an account on Indigo, to activate your account, please click the link below:
 

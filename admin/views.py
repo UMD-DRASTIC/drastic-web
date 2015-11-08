@@ -60,7 +60,7 @@ class CassandraAuthentication(BasicAuthentication):
 @authentication_classes((CassandraAuthentication,))
 @permission_classes((IsAuthenticated,))
 def authenticate(request):
-    msg = "User {} is authenticated".format(request.user.username)
+    msg = "User {} is authenticated".format(request.user.name)
     return Response({"message": msg})
 
 
@@ -341,7 +341,7 @@ def ls_user(request, username):
 @permission_classes((IsAuthenticated,))
 def users(request):
     if request.method == 'GET':
-        return Response([u.username for u in User.objects.all()])
+        return Response([u.name for u in User.objects.all()])
     elif request.method == 'POST':
         return create_user(request)
 

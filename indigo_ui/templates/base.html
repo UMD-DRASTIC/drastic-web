@@ -84,7 +84,7 @@
               {% else %}
                 <li class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-                    Welcome, {{ request.user.get_full_name|default:request.user.username }} <span class="pull-left" style="margin-top:-10px;margin-right: 8px;">{% gravatar request.user.email 40 %}</span>
+                    Welcome, {{ request.user.get_full_name|default:request.user.name }} <span class="pull-left" style="margin-top:-10px;margin-right: 8px;">{% gravatar request.user.email 40 %}</span>
                     <span class="caret"></span>
                   </a>
                    <ul class="dropdown-menu" role="menu">

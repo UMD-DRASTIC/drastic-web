@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load gravatar %}
 
-{% block title %}Users - {{user_obj.username}}{% endblock title %}
+{% block title %}Users - {{user_obj.name}}{% endblock title %}
 
 {% block sidebar %}
     {% include "snippets/sidenav.html" with active="users" %}
@@ -9,7 +9,7 @@
 
 
 {% block main_content %}
-    <h2>{% gravatar user_obj.email 40 %} {{ user_obj.username }}</h2>
+    <h2>{% gravatar user_obj.email 40 %} {{ user_obj.name }}</h2>
 
     <hr/>
     <h3>Profile</h3>

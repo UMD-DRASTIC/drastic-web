@@ -1,5 +1,5 @@
 {% load gravatar %}
 {% gravatar user.email 40 %}
-<span class="activity-message">{{ user.username }} edited the '<a href='{% url "archive:view" path=collection.path %}'>{{ collection.name }}</a>' collection </span>
+<span class="activity-message">{{ user.name }} edited the '<a href='{% url "archive:view" path=collection.path %}'>{{ collection.name }}</a>' collection </span>
 <span class="activity-timespan">{{ when|date:"M d, Y - P" }}</spam>
 

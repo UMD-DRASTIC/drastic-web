@@ -462,7 +462,7 @@ class CDMIView(APIView):
                 return Response(status=HTTP_406_NOT_ACCEPTABLE)
                 
             
-        self.logger.info("{} reads container at '{}' using CDMI".format(self.user.username, path))
+        self.logger.info("{} reads container at '{}' using CDMI".format(self.user.name, path))
         response = JsonResponse(body,
                                 content_type="application/cdmi-container")
         response["X-CDMI-Specification-Version"] = "1.1"
@@ -530,7 +530,7 @@ class CDMIView(APIView):
                 self.logger.error("Parameter problem for resource '{}' ('{}={}')".format(path, field, value))
                 return Response(status=HTTP_406_NOT_ACCEPTABLE)
             
-        self.logger.info("{} reads resource at '{}' using CDMI".format(self.user.username, path))
+        self.logger.info("{} reads resource at '{}' using CDMI".format(self.user.name, path))
         response = JsonResponse(body,
                                 content_type="application/cdmi-object")
         response["X-CDMI-Specification-Version"] = "1.1"
@@ -549,7 +549,7 @@ class CDMIView(APIView):
                 self.logger.error("Range header parsing failed '{}' for resource '{}'".format(specifier, path))
                 return Response(status=HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE)
             else:
-                self.logger.info("{} reads resource at '{}' using HTTP, with range '{}'".format(self.user.username, path, range))
+                self.logger.info("{} reads resource at '{}' using HTTP, with range '{}'".format(self.user.name, path, range))
                 # Totally inefficient but that's probably not something 
                 # we're gonna use a lot
                 value = cdmi_resource.get_value()
@@ -559,7 +559,7 @@ class CDMIView(APIView):
                 data = ''.join([d for d in data])
                 st = HTTP_206_PARTIAL_CONTENT
         else:
-            self.logger.info("{} reads resource at '{}' using HTTP".format(self.user.username, path))
+            self.logger.info("{} reads resource at '{}' using HTTP".format(self.user.name, path))
             data = cdmi_resource.get_value()
             content_type = cdmi_resource.get_mimetype()
             st = HTTP_200_OK

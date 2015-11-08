@@ -105,7 +105,7 @@ def delete_user(request, id):
     if request.method == "POST":
         user.delete()
         messages.add_message(request, messages.INFO,
-                             "The user '{}' has been deleted".format(user.username))
+                             "The user '{}' has been deleted".format(user.name))
         return redirect('users:home')
 
     # Requires delete on user
@@ -141,7 +141,7 @@ def edit_user(request, id):
             notify_agent(user.id, "user:edit")
             return redirect('users:home')
     else:
-        initial_data = {'username': user.username,
+        initial_data = {'username': user.name,
                         'email': user.email,
                         'administrator': user.administrator,
                         "active": user.active,

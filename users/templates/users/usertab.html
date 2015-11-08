@@ -7,13 +7,13 @@
             {% gravatar user.email 80 %}
             </td>
             <td valign="top" align="left">
-                <a href="{% url 'users:view' id=user.username %}">
-                {{ user.username }}
+                <a href="{% url 'users:view' id=user.name %}">
+                {{ user.name }}
                 </a>
-                <a href="{% url 'users:edit_user' id=user.username %}" >
+                <a href="{% url 'users:edit_user' id=user.name %}" >
                 <i class="blue-icon glyphicon glyphicon-pencil"></i>
                 </a>
-                <a href="{% url 'users:delete_user' id=user.username %}">
+                <a href="{% url 'users:delete_user' id=user.name %}">
                 <i class="blue-icon glyphicon glyphicon-remove-circle"></i>
                 </a>
             </td>
