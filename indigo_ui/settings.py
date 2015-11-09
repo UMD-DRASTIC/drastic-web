@@ -120,6 +120,7 @@ DATABASES = {
 }
 
 LOGIN_REDIRECT_URL = '/'
+LOGIN_URL = '/users/login'
 #INCLUDE_AUTH_URLS = True
 #INCLUDE_REGISTER_URL = True
 
