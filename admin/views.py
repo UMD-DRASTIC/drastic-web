@@ -119,8 +119,7 @@ def create_group(request):
         username = request_body['username']
     except KeyError:
         return Response("Missing username", status=HTTP_400_BAD_REQUEST)
-    group = Group.create(name=groupname,
-                         owner=username)
+    group = Group.create(name=groupname)
     return Response(group.to_dict(), status=HTTP_201_CREATED)
 
 
