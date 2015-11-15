@@ -30,14 +30,16 @@
   </div>
 
   {% if resource.metadata %}
-  <div class="row">
-  {% for m in resource.metadata %}
-    <span class="label label-{% if not resource.can_read %}default{% else %}success{% endif %}">
-    {{ m.0 }} = {{ m.1 }}
-    </span>&nbsp;&nbsp;
-
-  {% endfor %}
-  </div>
+      {% if resource.can_read %}
+        <div class="row">
+        {% for m in resource.metadata %}
+          <span class="label label-{% if not resource.can_read %}default{% else %}success{% endif %}">
+          {{ m.0 }} = {{ m.1 }}
+          </span>&nbsp;&nbsp;
+      
+        {% endfor %}
+        </div>
+     {% endif %}
   {% endif %}
 </div>
 <hr/>

@@ -637,11 +637,8 @@ class CDMIView(APIView):
                             content_type=body['objectType'],
                             status=response_status)
 
-
     def put_container_metadata(self, collection):
-        # TODO: cdmi_acl, remove metadata
         # Store any metadata and return appropriate error
-        metadata = {}
         tmp = self.request.content_type.split(";")
         content_type = tmp[0]
         try:
@@ -651,6 +648,11 @@ class CDMIView(APIView):
             requestBody = {}
         metadata = requestBody.get("metadata", {})
         if metadata:
+            if "cdmi_acl" in metadata:
+                # We treat acl metadata in a specific way
+                cdmi_acl = metadata["cdmi_acl"]
+                del metadata["cdmi_acl"]
+                collection.update_cdmi_acl(cdmi_acl)
             collection.update(metadata=metadata)
         return HTTP_204_NO_CONTENT
 
@@ -738,6 +740,8 @@ class CDMIView(APIView):
             # CDMI standards mandates 400 Bad Request response
             return Response(status=HTTP_400_BAD_REQUEST)
          # Sent as CDMI JSON
+        body = self.request.body
+        request_body = json.loads(body)
         try:
             body = self.request.body
             request_body = json.loads(body)
@@ -787,7 +791,13 @@ class CDMIView(APIView):
                 resource = self.create_data_object(parent, name, content, mimetype)        
         cdmi_resource = CDMIResource(resource, self.api_root)
         # Assemble metadata
-        metadata.update(request_body.get('metadata', {}))
+        metadata_body = request_body.get("metadata", {})
+        if "cdmi_acl" in metadata_body:
+            # We treat acl metadata in a specific way
+            cdmi_acl = metadata_body["cdmi_acl"]
+            del metadata_body["cdmi_acl"]
+            resource.update_cdmi_acl(cdmi_acl)
+        metadata.update(metadata_body)
         resource.update(metadata=metadata)
 
         body = OrderedDict()

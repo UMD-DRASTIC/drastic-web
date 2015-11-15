@@ -131,12 +131,11 @@ def new_resource(request, parent):
     if not mdata:
         mdata[""] = ""
 
+    read_access, write_access = parent_collection.read_acl()
     initial = {
         'metadata': json.dumps(mdata),
-        'read_access': parent_collection.read_access,
-        'write_access': parent_collection.write_access,
-        'edit_access': parent_collection.edit_access,
-        'delete_access': parent_collection.delete_access,
+        'read_access': read_access,
+        'write_access': write_access
     }
 
     if request.method == 'POST':
@@ -162,14 +161,11 @@ def new_resource(request, parent):
                 resource = Resource.create(name=name,
                                            container=parent_collection.path(),
                                            metadata=metadata,
-                                           read_access=data['read_access'],
-                                           write_access=data['write_access'],
-                                           delete_access=data['delete_access'],
-                                           edit_access=data['edit_access'],
                                            url=url,
                                            size=data['file'].size,
                                            mimetype=data['file'].content_type,
                                            type=get_extension(data['file'].name))
+                resource.create_acl(data['read_access'], data['write_access'])
 
                 notify_agent(resource.path(), "resource:new")
                 SearchIndex.index(resource, ['name', 'metadata'])
@@ -223,11 +219,8 @@ def edit_resource(request, path):
             try:
                 data = form.cleaned_data
 
-                resource.update(metadata=metadata,
-                                read_access=data['read_access'],
-                                write_access=data['write_access'],
-                                delete_access=data['delete_access'],
-                                edit_access=data['edit_access'])
+                resource.update(metadata=metadata)
+                resource.create_acl(data['read_access'], data['write_access'])
 
                 notify_agent(resource.path(), "resource:edit")
                 SearchIndex.reset(resource.path())
@@ -245,11 +238,11 @@ def edit_resource(request, path):
         if not md:
             metadata = '{"":""}'
 
+        read_access, write_access = resource.read_acl()
         initial_data = {'name': resource.name, 'metadata': metadata,
-                        'read_access': resource.read_access,
-                        'write_access': resource.write_access,
-                        'edit_access': resource.edit_access,
-                        'delete_access': resource.delete_access}
+                        'read_access': read_access,
+                        'write_access': write_access
+                       }
         form = ResourceForm(initial=initial_data)
 
     ctx = {
@@ -372,12 +365,11 @@ def new_collection(request, parent):
     if not mdata:
         mdata[""] = ""
 
+    read_access, write_access = parent_collection.read_acl()
     initial = {
         'metadata': json.dumps(mdata),
-        "read_access": parent_collection.read_access,
-        "write_access": parent_collection.write_access,
-        "edit_access": parent_collection.edit_access,
-        "delete_access": parent_collection.delete_access,
+        "read_access": read_access,
+        "write_access": write_access
     }
     form = CollectionNewForm(request.POST or None, initial=initial)
     if request.method == 'POST':
@@ -399,11 +391,8 @@ def new_collection(request, parent):
 
                 collection = Collection.create(name=name,
                                                container=parent,
-                                               metadata=metadata,
-                                               read_access=data['read_access'],
-                                               write_access=data['write_access'],
-                                               delete_access=data['delete_access'],
-                                               edit_access=data['edit_access'])
+                                               metadata=metadata)
+                collection.create_acl(data['read_access'], data['write_access'])
                 SearchIndex.index(collection, ['name', 'metadata'])
                 messages.add_message(request, messages.INFO,
                                      u"New collection '{}' created" .format(collection.name))
@@ -440,11 +429,8 @@ def edit_collection(request, path):
 
             try:
                 data = form.cleaned_data
-                coll.update(metadata=metadata,
-                            read_access=data['read_access'],
-                            write_access=data['write_access'],
-                            delete_access=data['delete_access'],
-                            edit_access=data['edit_access'])
+                coll.update(metadata=metadata)
+                coll.create_acl(data['read_access'], data['write_access'])
 
                 SearchIndex.reset(coll.id)
                 SearchIndex.index(coll, ['name', 'metadata'])
@@ -460,12 +446,10 @@ def edit_collection(request, path):
         metadata = json.dumps(md)
         if not md:
             metadata = '{"":""}'
-
+        read_access, write_access = coll.read_acl()
         initial_data = {'name': coll.name, 'metadata': metadata,
-                        'read_access': coll.read_access,
-                        'write_access': coll.write_access,
-                        'edit_access': coll.edit_access,
-                        'delete_access': coll.delete_access}
+                        'read_access': read_access,
+                        'write_access': write_access}
         form = CollectionForm(initial=initial_data)
 
     groups = Group.objects.all()

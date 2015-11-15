@@ -26,9 +26,11 @@
 
 {% if collection.metadata %}
 <div class="row" style="margin-top: 10px;">
-    <div class="col-md-12">
-      {% include "archive/snippets/metadata.html" with metadata=collection.metadata label='default'%}
-    </div>
+    {% if collection.can_read %}
+        <div class="col-md-12">
+            {% include "archive/snippets/metadata.html" with metadata=collection.metadata label='default'%}
+        </div>
+    {% endif %}
 </div>
 {% endif %}
 
