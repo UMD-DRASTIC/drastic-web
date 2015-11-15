@@ -17,7 +17,7 @@
     {% if forloop.last %}
         <li class="active">{{coll}}</li>
     {% else %}
-        <li><a href="{% url 'archive:view' path=full %}/">{{coll}}</a></li>
+        <li><a href="{% url 'archive:view' path=full %}">{{coll}}</a></li>
     {% endif %}
   {% endfor %}
 </ol>
