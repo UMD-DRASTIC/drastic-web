@@ -105,6 +105,7 @@ def resource_view(request, path):
     ctx = {
         "resource": resource.to_dict(request.user),
         "container": container,
+        "container_path": container.path(),
         "collection_paths": paths
     }
     return render(request, 'archive/resource/view.html', ctx)
