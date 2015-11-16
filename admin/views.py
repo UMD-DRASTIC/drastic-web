@@ -33,6 +33,7 @@ from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_206_PARTIAL_CONTENT,
     HTTP_400_BAD_REQUEST,
+    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT
 )
@@ -71,9 +72,17 @@ def group(request, groupname):
     if request.method == 'GET':
         return ls_group(request, groupname)
     elif request.method == 'DELETE':
-        return delete_group(request, groupname)
+        if request.user and request.user.administrator:
+            return delete_group(request, groupname)
+        else:
+            return Response("User lack authorization.",
+                            status=HTTP_403_FORBIDDEN)
     elif request.method == 'PUT':
-        return modify_group(request, groupname)
+        if request.user and request.user.administrator:
+            return modify_group(request, groupname)
+        else:
+            return Response("User lack authorization.",
+                            status=HTTP_403_FORBIDDEN)
 
 
 @api_view(['GET', 'POST'])
@@ -83,7 +92,11 @@ def groups(request):
     if request.method == 'GET':
         return Response([u.name for u in Group.objects.all()])
     elif request.method == 'POST':
-        return create_group(request)
+        if request.user and request.user.administrator:
+            return create_group(request)
+        else:
+            return Response("User lack authorization.",
+                            status=HTTP_403_FORBIDDEN)
 
 
 @api_view(['GET', 'PUT', 'DELETE'])
@@ -93,9 +106,17 @@ def user(request, username):
     if request.method == 'GET':
         return ls_user(request, username)
     elif request.method == 'PUT':
-        return modify_user(request, username)
+        if request.user and request.user.administrator:
+            return modify_user(request, username)
+        else:
+            return Response("User lack authorization.",
+                            status=HTTP_403_FORBIDDEN)
     elif request.method == 'DELETE':
-        return delete_user(request, username)
+        if request.user and request.user.administrator:
+            return delete_user(request, username)
+        else:
+            return Response("User lack authorization.",
+                            status=HTTP_403_FORBIDDEN)
 
 
 def create_group(request):
