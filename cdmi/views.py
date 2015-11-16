@@ -24,6 +24,7 @@ import zipfile
 import os
 import json
 import logging
+import ldap
 
 from django.shortcuts import redirect
 from django.http import JsonResponse
@@ -105,7 +106,7 @@ POSSIBLE_DATA_OBJECT_LOCATIONS = [
     'value'
 ]
 
-# Body fields for reading a data object object using CDMI, the value of the 
+# Body fields for reading a data object object using CDMI, the value of the
 # dictionary can be used to pass parameters
 FIELDS_DATA_OBJECT = OrderedDict([('objectType', None),
                                   ('objectID', None),
@@ -123,7 +124,7 @@ FIELDS_DATA_OBJECT = OrderedDict([('objectType', None),
                                   ('valuerange', None)
                                   ])
 
-# Body fields for reading a container object using CDMI, the value of the 
+# Body fields for reading a container object using CDMI, the value of the
 # dictionary can be used to pass parameters
 FIELDS_CONTAINER = OrderedDict([('objectType', None),
                                 ('objectID', None),
@@ -166,7 +167,7 @@ def parse_range_header(specifier, len_content):
             return []
 
         if val.startswith("-"):
-            # suffix-byte-range-spec: this form specifies the last N 
+            # suffix-byte-range-spec: this form specifies the last N
             # bytes of an entity-body
             start = len_content + int(val)
             if start < 0:
@@ -266,9 +267,27 @@ class CassandraAuthentication(BasicAuthentication):
         user = User.find(userid)
         if user is None or not user.is_active():
             raise exceptions.AuthenticationFailed(_('User inactive or deleted.'))
-        if not user.authenticate(password):
+        if not user.authenticate(password) and not ldapAuthenticate(username, password):
             raise exceptions.AuthenticationFailed(_('Invalid username/password.'))
         return (user, None)
+
+    def ldapAuthenticate(username, password):
+        if settings.AUTH_LDAP_SERVER_URI is None:
+            return False
+
+        if settings.AUTH_LDAP_USER_DN_TEMPLATE is None:
+            return False
+
+        try:
+            connection = ldap.initialize(settings.AUTH_LDAP_SERVER_URI)
+            connection.protocol_version = ldap.VERSION3
+            user_dn = settings.AUTH_LDAP_USER_DN_TEMPLATE % {"user": username}
+            connection.simple_bind_s(user_dn, password)
+            return True
+        except ldap.INVALID_CREDENTIALS:
+            return False
+        except ldap.SERVER_DOWN:
+            return False
 
 
 class CDMIView(APIView):
@@ -430,7 +449,7 @@ class CDMIView(APIView):
         if not http_accepts.intersection(set(['application/cdmi-container', '*/*'])):
             self.logger.error("Accept header problem for container '{}' ('{}')".format(path, http_accepts))
             return Response(status=HTTP_406_NOT_ACCEPTABLE)
-        
+
         if self.request.GET:
             fields = {}
             for field, value in self.request.GET.items():
@@ -441,10 +460,10 @@ class CDMIView(APIView):
                     return Response(status=HTTP_406_NOT_ACCEPTABLE)
         else:
             fields = FIELDS_CONTAINER
-        
+
         # Obtained information in a dictionary
         body = OrderedDict()
-        
+
         for field, value in fields.items():
             get_field = getattr(cdmi_container, 'get_{}'.format(field))
             # If we send children with a range value we need to update the
@@ -460,8 +479,8 @@ class CDMIView(APIView):
             except:
                 self.logger.error("Parameter problem for container '{}' ('{}={}')".format(path, field, value))
                 return Response(status=HTTP_406_NOT_ACCEPTABLE)
-                
-            
+
+
         self.logger.info("{} reads container at '{}' using CDMI".format(self.user.name, path))
         response = JsonResponse(body,
                                 content_type="application/cdmi-container")
@@ -484,7 +503,7 @@ class CDMIView(APIView):
         if not resource.user_can(self.user, "read"):
             self.logger.warning("User {} tried to read resource at '{}'".format(self.user, path))
             return Response(status=HTTP_403_FORBIDDEN)
-        
+
         cdmi_resource = CDMIResource(resource, self.api_root)
         if self.http_mode:
             return self.read_data_object_http(cdmi_resource)
@@ -499,7 +518,7 @@ class CDMIView(APIView):
         if not http_accepts.intersection(set(['application/cdmi-object', '*/*'])):
             self.logger.error("Accept header problem for resource '{}' ('{}')".format(path, http_accepts))
             return Response(status=HTTP_406_NOT_ACCEPTABLE)
-        
+
         # TODO: multipart/mixed, byte ranges for value, filter metadata
         if self.request.GET:
             fields = {}
@@ -511,7 +530,7 @@ class CDMIView(APIView):
                     return Response(status=HTTP_406_NOT_ACCEPTABLE)
         else:
             fields = FIELDS_DATA_OBJECT
-        
+
         # Obtained information in a dictionary
         body = OrderedDict()
         for field, value in fields.items():
@@ -529,7 +548,7 @@ class CDMIView(APIView):
             except Exception as e:
                 self.logger.error("Parameter problem for resource '{}' ('{}={}')".format(path, field, value))
                 return Response(status=HTTP_406_NOT_ACCEPTABLE)
-            
+
         self.logger.info("{} reads resource at '{}' using CDMI".format(self.user.name, path))
         response = JsonResponse(body,
                                 content_type="application/cdmi-object")
@@ -550,7 +569,7 @@ class CDMIView(APIView):
                 return Response(status=HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE)
             else:
                 self.logger.info("{} reads resource at '{}' using HTTP, with range '{}'".format(self.user.name, path, range))
-                # Totally inefficient but that's probably not something 
+                # Totally inefficient but that's probably not something
                 # we're gonna use a lot
                 value = cdmi_resource.get_value()
                 data = []
@@ -563,8 +582,8 @@ class CDMIView(APIView):
             data = cdmi_resource.get_value()
             content_type = cdmi_resource.get_mimetype()
             st = HTTP_200_OK
-        
-        return Response(data, 
+
+        return Response(data,
                         content_type=cdmi_resource.get_mimetype(),
                         status=st)
 
@@ -594,7 +613,7 @@ class CDMIView(APIView):
         if not parent_collection.user_can(self.user, "write"):
             self.logger.warning("User {} tried to create new collection at '{}'".format(self.user, path))
             return Response(status=HTTP_403_FORBIDDEN)
-        
+
         body = OrderedDict()
         try:
             collection = Collection.create(name=name,
@@ -626,7 +645,7 @@ class CDMIView(APIView):
             for field, value in FIELDS_CONTAINER.items():
                 get_field = getattr(cdmi_container, 'get_{}'.format(field))
                 body[field] = get_field()
-            
+
             if delayed:
                 response_status = HTTP_202_ACCEPTED
                 body['completionStatus'] = "Processing"
@@ -661,7 +680,7 @@ class CDMIView(APIView):
         chunk_size = 1048576
         blob = Blob.create()
         hasher = hashlib.sha256()
-        
+
         if settings.COMPRESS_UPLOADS:
             # Compress the raw_data and store that instead
             f = StringIO()
@@ -788,7 +807,7 @@ class CDMIView(APIView):
                                 type=get_extension(name))
             else:
                 # Create resource
-                resource = self.create_data_object(parent, name, content, mimetype)        
+                resource = self.create_data_object(parent, name, content, mimetype)
         cdmi_resource = CDMIResource(resource, self.api_root)
         # Assemble metadata
         metadata_body = request_body.get("metadata", {})
@@ -813,7 +832,7 @@ class CDMIView(APIView):
             except Exception as e:
                 self.logger.error("Parameter problem for resource '{}' ('{}={}')".format(cdmi_resource.get_path(), field, value))
                 return Response(status=HTTP_406_NOT_ACCEPTABLE)
-        
+
         return JsonResponse(body,
                             content_type='application/cdmi-object',
                             status=HTTP_201_CREATED)
