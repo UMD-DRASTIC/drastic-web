@@ -37,6 +37,7 @@ from rest_framework.status import (
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT
 )
+import ldap
 
 from indigo.models.group import Group
 from indigo.models.user import User
@@ -52,9 +53,27 @@ class CassandraAuthentication(BasicAuthentication):
         user = User.find(userid)
         if user is None or not user.is_active():
             raise exceptions.AuthenticationFailed(_('User inactive or deleted.'))
-        if not user.authenticate(password):
+        if not user.authenticate(password) and not ldapAuthenticate(username, password):
             raise exceptions.AuthenticationFailed(_('Invalid username/password.'))
         return (user, None)
+
+    def ldapAuthenticate(username, password):
+        if settings.AUTH_LDAP_SERVER_URI is None:
+            return False
+
+        if settings.AUTH_LDAP_USER_DN_TEMPLATE is None:
+            return False
+
+        try:
+            connection = ldap.initialize(settings.AUTH_LDAP_SERVER_URI)
+            connection.protocol_version = ldap.VERSION3
+            user_dn = settings.AUTH_LDAP_USER_DN_TEMPLATE % {"user": username}
+            connection.simple_bind_s(user_dn, password)
+            return True
+        except ldap.INVALID_CREDENTIALS:
+            return False
+        except ldap.SERVER_DOWN:
+            return False
 
 
 @api_view(['GET'])
