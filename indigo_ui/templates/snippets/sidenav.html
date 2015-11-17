@@ -2,11 +2,11 @@
 <li {% if active == 'archive' %}class="active"{% endif %}>
     <a href="{% url 'archive:home' %}">Archive</a>
 </li>
-{% if user.administrator %}
+<!--{% if user.administrator %}
     <li {% if active == 'nodes' %}class="active"{% endif %}>
         <a href="{% url 'nodes:home' %}">Nodes</a>
     </li>
-{% endif %}
+{% endif %}-->
 <li {% if active == 'users' %}class="active"{% endif %}>
     <a href="{% url 'users:home' %}">Users</a>
 </li>
