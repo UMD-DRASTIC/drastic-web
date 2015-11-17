@@ -1,4 +1,4 @@
-""""Users UI URLs
+""""Groups UI URLs
 
 Copyright 2015 Archive Analytics Solutions
 
@@ -18,15 +18,16 @@ limitations under the License.
 from django.conf.urls import url
 
 urlpatterns = [
-    url(r'^$', 'users.views.home', name='home'),
-    url(r'^login$', 'users.views.userlogin', name='auth_login'),
-    url(r'^logout$', 'users.views.userlogout', name='auth_logout'),
+    url(r'^$', 'groups.views.home', name='home'),
     
-    url(r'^new/user$', 'users.views.new_user', name='new_user'),
-    url(r'^delete/user/(?P<id>.*)$', 'users.views.delete_user', name='delete_user'),
-    url(r'^edit/user/(?P<id>.*)$', 'users.views.edit_user', name='edit_user'),
+    url(r'^new/group', 'groups.views.new_group', name='new_group'),
+    url(r'^delete/group/(?P<id>.*)$', 'groups.views.delete_group', name='delete_group'),
+    url(r'^edit/group/(?P<id>.*)$', 'groups.views.edit_group', name='edit_group'),
     
-    url(r'^(?P<id>.*)$', 'users.views.user_view', name='view'),
+    url(r'^rm/(?P<id>.*)/(?P<uname>.*)$', 'groups.views.rm_user', name='rm_user'),
+    url(r'^add/(?P<id>.*)$', 'groups.views.add_user', name='add_user'),
+
+    url(r'^(?P<id>.*)$', 'groups.views.group_view', name='view'),
     
 
 ]

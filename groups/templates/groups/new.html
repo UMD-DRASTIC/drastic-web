@@ -1,0 +1,18 @@
+{% extends "archive/base.html" %}
+
+{% block title %}New Group{% endblock title %}
+
+{% block main_content %}
+
+<h2>New Group
+    <a class="pull-right btn btn-default" href="{% url 'groups:home' %}">
+    &laquo; Back to Group list
+    </a>
+    </h2>
+<hr/>
+
+{% include "groups/group_form.html" with form=form action='new' %}
+
+{% endblock main_content %}
+
+

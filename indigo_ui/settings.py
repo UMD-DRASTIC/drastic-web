@@ -55,8 +55,10 @@ INSTALLED_APPS = (
     'activity',
     'nodes',
     'users',
+    'groups',
     #'s3',
     'cdmi',
+    'admin'
 )
 
 DEFAULT_APP_CONFIG = 'indigo_ui.IndigoAppConfig'

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+
+{% block title %}Groups{% endblock title %}
+
+{% block sidebar %}
+    {% include "snippets/sidenav.html" with active="groups" %}
+{% endblock sidebar %}
+
+
+{% block main_content %}
+    <h2>Groups ({{ group_count }})</h2><hr/>
+
+	{% if user.administrator %}
+	<div class="row">
+	  <div class="pull-right">
+	    <a class="btn btn-sm btn-success" href="{% url 'groups:new_group' %}">Add new group</a>
+	    
+	  </div>
+	</div>
+	<hr/>
+	{% endif %}
+
+    {% for group in groups %}
+        {% include "groups/grouptab.html" with group=group%}
+    {% endfor %}
+
+    <div class="pagination">
+        <span class="step-links">
+            {% if groups.has_previous %}
+                <a href="?page={{ groups.previous_page_number }}">previous</a>
+            {% endif %}
+
+            <span class="current">
+                Page {{ groups.number }} of {{ groups.paginator.num_pages }}.
+            </span>
+
+            {% if groups.has_next %}
+                <a href="?page={{ groups.next_page_number }}">next</a>
+            {% endif %}
+        </span>
+    </div>
+
+
+{% endblock main_content %}

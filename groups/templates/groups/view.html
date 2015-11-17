@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load gravatar %}
+
+{% block title %}Groups - {{group_obj.name}}{% endblock title %}
+
+{% block sidebar %}
+    {% include "snippets/sidenav.html" with active="groups" %}
+{% endblock sidebar %}
+
+
+{% block main_content %}
+    <h2>{% gravatar group_obj.name 40 %} {{ group_obj.name }}</h2>
+
+    <hr/>
+    <h3>Members</h3>
+
+    <div>
+        
+        <ul>
+        {% for member_name in members %}
+            <li>
+              <a href="{% url 'users:view' id=member_name %}">{{ member_name }}</a>
+                {% if user.administrator %}
+                  <a href="{% url 'groups:rm_user' id=group_obj.id uname=member_name %}">
+                    <i class="blue-icon glyphicon glyphicon-remove-circle"></i>
+                  </a>
+                {% endif %}
+            </li>
+        {% endfor %}
+        {% if user.administrator %}
+          <li>
+            <a href="{% url 'groups:add_user' id=group_obj.id %}">Add user</a>
+          </li>
+        {% endif %}
+        </ul>
+    </div>
+
+
+{% endblock main_content %}

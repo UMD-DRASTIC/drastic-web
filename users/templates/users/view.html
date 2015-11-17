@@ -15,12 +15,14 @@
     <h3>Profile</h3>
 
     <div>
-        <div>
-            <strong>Active:</strong> <input type="checkbox" name="active" {% if user_obj.active %}checked{% endif %} />
-        </div>
-        <div>
-            <strong>Administrator:</strong> <input type="checkbox" name="active" {% if user_obj.administrator %}checked{% endif %} />
-        </div>
+        {% if req_user.administrator %}
+          <div>
+              <strong>Active:</strong> <input type="checkbox" name="active" {% if user_obj.active %}checked{% endif %} />
+          </div>
+          <div>
+              <strong>Administrator:</strong> <input type="checkbox" name="active" {% if user_obj.administrator %}checked{% endif %} />
+          </div>
+        {% endif %}
         
         <div>
             <strong>Email:</strong> {{ user_obj.email|default:"Private"}}

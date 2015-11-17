@@ -1,0 +1,32 @@
+<!-- 
+{% if form.errors %}
+    <div class="alert alert-danger">
+    Please correct the problem in the form below.
+    </div>
+{% endif %}
+ -->
+{% if action == 'add' %}
+    {% url 'groups:add_user' id=group.id as post_url %}
+{% endif %}
+
+<form id="addForm" method="POST" action="{{post_url}}" novalidate="novalidate" enctype="multipart/form-data">
+    {% csrf_token %}
+    
+<!--     {{ form }} -->
+    
+    <div class="form-group {% if form.errors.name %}has-error{% endif %}">
+        <label for="name" class="control-label">User list</label>
+    </div>
+    <p>
+        <select id="select_add_user_form" name="users" form="addForm" multiple
+                style="width:100px;height:200px">
+            {% for uname, _ in users %}
+              <option value="{{uname}}">{{uname}} </option>
+            {% endfor %}
+        </select>
+    </p>
+
+    
+    
+    <button type="submit" class="btn btn-success btn-block">Add</button>
+</form>

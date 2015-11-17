@@ -21,8 +21,8 @@
 	<hr/>
 	{% endif %}
 
-    {% for user in users %}
-        {% include "users/usertab.html" with user=user%}
+    {% for u in users %}
+        {% include "users/usertab.html" with req_user=user user=u %}
     {% endfor %}
 
     <div class="pagination">

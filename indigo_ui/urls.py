@@ -27,6 +27,7 @@ urlpatterns = [
     url(r'^archive/', include('archive.urls', namespace="archive")),
     url(r'^node/', include('nodes.urls', namespace="nodes")),
     url(r'^users/', include('users.urls', namespace="users")),
+    url(r'^groups/', include('groups.urls', namespace="groups")),
     url(r'^activity/', include('activity.urls', namespace="activity")),
 
     url(r'^about$', TemplateView.as_view(template_name='about.html'), name='about'),

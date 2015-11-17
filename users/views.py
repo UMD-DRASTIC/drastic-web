@@ -163,7 +163,7 @@ def new_user(request):
         form = UserForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
-            User.create(username=data.get("username"),
+            User.create(name=data.get("username"),
                         # TODO: Check if we can't harmonize unicode use for passwords between django and CLI
                         password=data.get("password").encode("ascii", "ignore"),
                         email=data.get("email", ""),
@@ -189,6 +189,7 @@ def user_view(request, id):
     user = User.find(id)
 
     ctx = {
+        "req_user": request.user,
         "user_obj": user,
     }
     return render(request, 'users/view.html', ctx)

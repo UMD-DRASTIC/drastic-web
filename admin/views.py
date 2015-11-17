@@ -191,7 +191,7 @@ def create_user(request):
     except KeyError:
         return Response("Missing password", status=HTTP_400_BAD_REQUEST)
     administrator = request_body.get('administrator', False)
-    user = User.create(username=username,
+    user = User.create(name=username,
                        password=password,
                        email=email,
                        administrator=administrator)

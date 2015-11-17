@@ -1,0 +1,23 @@
+{% extends "archive/base.html" %}
+
+{% block title %}Delete Group - {{group.name}}{% endblock title %}
+
+{% block main_content %}
+
+    <h2>Delete Group - {{group.name}}</h2>
+
+    <br/><br/>
+
+    <div style="text-align:center; margin-top: 20px;">
+        <div style='font-size: 1.5em'>
+        Are you sure you wish to delete group {{group.name}}?
+        </div>
+
+        <form action="{% url 'groups:delete_group' id=group.id %}" method="POST">
+            {% csrf_token %}
+            <button class="btn btn-lg btn-danger">Delete this group</button>
+            <a href="{% url 'groups:home' %}" class="btn btn-lg btn-success">Cancel</a>
+        </form>
+
+    </div>
+{% endblock main_content %}

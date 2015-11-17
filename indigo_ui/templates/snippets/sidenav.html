@@ -10,6 +10,9 @@
 <li {% if active == 'users' %}class="active"{% endif %}>
     <a href="{% url 'users:home' %}">Users</a>
 </li>
+<li {% if active == 'groups' %}class="active"{% endif %}>
+    <a href="{% url 'groups:home' %}">Groups</a>
+</li>
 <li {% if active == 'activity' %}class="active"{% endif %}>
     <a href="{% url 'activity:home' %}">Activity</a>
 </li>
