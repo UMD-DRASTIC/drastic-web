@@ -1,5 +1,10 @@
 {% extends "archive/base.html" %}
 
+{% block sidebar %}
+    {% include "snippets/sidenav.html" with active="users" %}
+{% endblock sidebar %}
+
+
 {% block title %}New User{% endblock title %}
 
 {% block main_content %}

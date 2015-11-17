@@ -1,5 +1,9 @@
 {% extends "archive/base.html" %}
 
+{% block sidebar %}
+    {% include "snippets/sidenav.html" with active="groups" %}
+{% endblock sidebar %}
+
 {% block title %}Delete Group - {{group.name}}{% endblock title %}
 
 {% block main_content %}

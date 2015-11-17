@@ -1,12 +1,10 @@
 {% extends "base.html" %}
 
-
-{% block title %}Users{% endblock title %}
-
 {% block sidebar %}
     {% include "snippets/sidenav.html" with active="users" %}
 {% endblock sidebar %}
 
+{% block title %}Users{% endblock title %}
 
 {% block main_content %}
     <h2>Users ({{ user_count }})</h2><hr/>

@@ -1,5 +1,9 @@
 {% extends "archive/base.html" %}
 
+{% block sidebar %}
+    {% include "snippets/sidenav.html" with active="users" %}
+{% endblock sidebar %}
+
 {% block title %}Delete User - {{user.uname}}{% endblock title %}
 
 {% block main_content %}

@@ -6,7 +6,10 @@ from django.http import Http404
 from django.contrib import messages
 from django.conf import settings
 
-from indigo.models import User
+from indigo.models import (
+    Group,
+    User
+)
 import ldap
 
 from users.forms import UserForm
@@ -163,12 +166,14 @@ def new_user(request):
         form = UserForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
-            User.create(name=data.get("username"),
+            user = User.create(name=data.get("username"),
                         # TODO: Check if we can't harmonize unicode use for passwords between django and CLI
                         password=data.get("password").encode("ascii", "ignore"),
                         email=data.get("email", ""),
                         administrator=data.get("administrator", False),
                         active=data.get("active", False))
+            messages.add_message(request, messages.INFO,
+                             "The user '{}' has been created".format(user.name))
             return redirect('users:home')
     else:
         form = UserForm()
@@ -191,5 +196,6 @@ def user_view(request, id):
     ctx = {
         "req_user": request.user,
         "user_obj": user,
+        "groups": [Group.find_by_id(gid) for gid in user.groups]
     }
     return render(request, 'users/view.html', ctx)

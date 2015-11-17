@@ -2,6 +2,10 @@
 
 {% block title %}Edit Group - {{group.name}}{% endblock title %}
 
+{% block sidebar %}
+    {% include "snippets/sidenav.html" with active="groups" %}
+{% endblock sidebar %}
+
 {% block main_content %}
 
 <h2>Edit Group - {{group.name}}
