@@ -15,7 +15,7 @@
   <li><a href="{% url 'archive:view' path="" %}">Home</a></li>
   {% for coll,full in collection_paths %}
     {% if forloop.last %}
-        <li class="active">{{coll}}</li>
+        <li class="active"><a href="{% url 'archive:view' path=full %}">{{coll}}</a></li>
     {% else %}
         <li><a href="{% url 'archive:view' path=full %}">{{coll}}</a></li>
     {% endif %}
