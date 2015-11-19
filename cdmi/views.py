@@ -92,7 +92,7 @@ from indigo.models.errors import (
 
 # List of supported version (In order so the first to be picked up is the most
 # recent one
-CDMI_SUPPORTED_VERSION = ["1.1", "1.0.2"]
+CDMI_SUPPORTED_VERSION = ["1.1", "1.1.1", "1.0.2"]
 
 # Possible sections of the CDMI request body where the data object content
 # may be specified
@@ -140,6 +140,21 @@ FIELDS_CONTAINER = OrderedDict([('objectType', None),
                                 ('children', None)
                                ])
 
+def check_cdmi_version(request):
+     """Check the HTTP request header to see what version the client is
+     supporting. Return the highest version supported by both the client and
+     the server,
+     '' if no match is found or no version provided by the client
+     'HTTP' if the cdmi header is not present"""
+     if not request.META.has_key("HTTP_X_CDMI_SPECIFICATION_VERSION"):
+         return("HTTP")
+     spec_version_raw = request.META.get("HTTP_X_CDMI_SPECIFICATION_VERSION", "")
+     versions_list = [el.strip() for el in spec_version_raw.split(",")]
+     for version in CDMI_SUPPORTED_VERSION:
+         if version in versions_list:
+             return version
+     else:
+         return ""
 
 # TODO: Move this to a helper
 def get_extension(name):
@@ -186,6 +201,15 @@ def parse_range_header(specifier, len_content):
 
     return ranges
 
+def crud_id(request, id):
+    # The URL should end with a '/'
+    id = id.replace('/', '')
+    collection = Collection.find_by_id(id)
+    if collection:
+        return redirect('cdmi:api_cdmi', path=collection.path())
+    else:
+        return Response(HTTP_404_NOT_FOUND)
+
 def capabilities(request, path):
     """Read all fields from an existing capability object.
 
@@ -205,7 +229,7 @@ def capabilities(request, path):
         body["parentID"] = "00007E7F0010128E42D87EE34F5A6560"
         body["childrenrange"] = "0-3"
         body["children"] = ["domain/", "container/", "data_object/", "queue/"]
-    elif path.startswith('/data_object'):
+    elif not path.endswith('/'):
         d = CDMIDataAccessObject({}).data_objectCapabilities._asdict()
         body['capabilities'] = d
         body["objectType"] = "application/cdmi-capability"
@@ -215,7 +239,7 @@ def capabilities(request, path):
         body["parentID"] = "00007E7F00104BE66AB53A9572F9F51FE"
         body["childrenrange"] = "0"
         body["children"] = []
-    elif path.startswith('/container'):
+    else:
         d = CDMIDataAccessObject({}).containerCapabilities._asdict()
         body['capabilities'] = d
         body["objectType"] = "application/cdmi-capability"
@@ -324,6 +348,7 @@ class CDMIView(APIView):
 
     @csrf_exempt
     def get(self, request, path='/', format=None):
+        print path
         self.user = request.user
         # Check HTTP Headers for CDMI version or HTTP mode
         self.cdmi_version = self.check_cdmi_version()
@@ -332,8 +357,9 @@ class CDMIView(APIView):
             return Response(status=HTTP_400_BAD_REQUEST)
         self.http_mode = self.cdmi_version == "HTTP"
 
-        # Add a '/' at the beginning
-        path = "/{}".format(path)
+        # Add a '/' at the beginning if not present
+        if not path.startswith('/'):
+            path = "/{}".format(path)
         # In CDMI standard a container is defined by the / at the end
         is_container = path.endswith('/')
         if is_container:
@@ -355,8 +381,9 @@ class CDMIView(APIView):
             return Response(status=HTTP_400_BAD_REQUEST)
         self.http_mode = self.cdmi_version == "HTTP"
 
-        # Add a '/' at the beginning
-        path = "/{}".format(path)
+        # Add a '/' at the beginning if not present
+        if not path.startswith('/'):
+            path = "/{}".format(path)
         # In CDMI standard a container is defined by the / at the end
         is_container = path.endswith('/')
         if is_container:
@@ -376,8 +403,9 @@ class CDMIView(APIView):
             self.logger.warning("Unsupported CDMI version")
             return Response(status=HTTP_400_BAD_REQUEST)
         self.http_mode = self.cdmi_version == "HTTP"
-        # Add a '/' at the beginning
-        path = "/{}".format(path)
+        # Add a '/' at the beginning if not present
+        if not path.startswith('/'):
+            path = "/{}".format(path)
         # In CDMI standard a container is defined by the / at the end
         is_container = path.endswith('/')
         if not path or path == '/':
@@ -449,7 +477,6 @@ class CDMIView(APIView):
         if not http_accepts.intersection(set(['application/cdmi-container', '*/*'])):
             self.logger.error("Accept header problem for container '{}' ('{}')".format(path, http_accepts))
             return Response(status=HTTP_406_NOT_ACCEPTABLE)
-
         if self.request.GET:
             fields = {}
             for field, value in self.request.GET.items():
@@ -605,6 +632,9 @@ class CDMIView(APIView):
 
         # Create Collection
         parent, name = split(path)
+        if name.startswith("cdmi_"):
+            return Response("cdmi_ prefix is not a valid name for a container",
+                            status=HTTP_400_BAD_REQUEST)
         parent_collection = Collection.find_by_path(parent)
         if not parent_collection:
             self.logger.info("Fail to create a collection at '{}', parent collection doesn't exist".format(path))
@@ -742,7 +772,7 @@ class CDMIView(APIView):
         else:
             # Create resource
             self.create_data_object(parent, name, content, mimetype)
-            return Response(status=HTTP_204_NO_CONTENT)
+            return Response(status=HTTP_201_CREATED)
 
 
     def put_data_object_cdmi(self, parent, name, resource):
