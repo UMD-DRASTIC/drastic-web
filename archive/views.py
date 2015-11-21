@@ -74,12 +74,6 @@ def home(request):
     return redirect('archive:view', path='')
 
 
-def notify_agent(resource_id, event=""):
-    from nodes.client import choose_client
-    client = choose_client()
-    client.notify(resource_id, event)
-
-
 ##############################################################################
 # Collection specific view functions
 ##############################################################################
@@ -167,9 +161,6 @@ def new_resource(request, parent):
                                            mimetype=data['file'].content_type,
                                            type=get_extension(data['file'].name))
                 resource.create_acl(data['read_access'], data['write_access'])
-
-                notify_agent(resource.path(), "resource:new")
-                SearchIndex.index(resource, ['name', 'metadata'])
                 messages.add_message(request, messages.INFO,
                                      u"New resource '{}' created" .format(resource.name))
 
@@ -222,11 +213,6 @@ def edit_resource(request, path):
 
                 resource.update(metadata=metadata)
                 resource.create_acl(data['read_access'], data['write_access'])
-
-                notify_agent(resource.path(), "resource:edit")
-                SearchIndex.reset(resource.path())
-                SearchIndex.index(resource, ['name', 'metadata'])
-
                 edited_resource_signal.send(None, user=request.user, resource=resource)
 
                 return redirect('archive:resource_view', path=resource.path())
@@ -267,8 +253,6 @@ def delete_resource(request, path):
 
     container = resource.get_container()
     if request.method == "POST":
-        # TODO: Check if there's a Search index to reset for the resource ?
-        # SearchIndex.reset(coll.id)
         resource.delete()
         messages.add_message(request, messages.INFO,
                              "The resource '{}' has been deleted".format(resource.name))
@@ -280,7 +264,6 @@ def delete_resource(request, path):
         "container": container,
     }
 
-    notify_agent(resource.path(), "resource:delete")
     return render(request, 'archive/resource/delete.html', ctx)
 
 
@@ -394,7 +377,6 @@ def new_collection(request, parent):
                                                container=parent,
                                                metadata=metadata)
                 collection.create_acl(data['read_access'], data['write_access'])
-                SearchIndex.index(collection, ['name', 'metadata'])
                 messages.add_message(request, messages.INFO,
                                      u"New collection '{}' created" .format(collection.name))
 
@@ -432,12 +414,7 @@ def edit_collection(request, path):
                 data = form.cleaned_data
                 coll.update(metadata=metadata)
                 coll.create_acl(data['read_access'], data['write_access'])
-
-                SearchIndex.reset(coll.id)
-                SearchIndex.index(coll, ['name', 'metadata'])
-
                 edited_collection_signal.send(None, user=request.user, collection=coll)
-
                 return redirect('archive:view', path=coll.path())
             except CollectionConflictError:
                 messages.add_message(request, messages.ERROR,
@@ -465,8 +442,6 @@ def delete_collection(request, path):
         raise PermissionDenied
 
     if request.method == "POST":
-        SearchIndex.reset(coll.id)
-        # TODO: Mark collection as inactive...
         Collection.delete_all(coll.path())
         messages.add_message(request, messages.INFO,
                              "The collection '{}' has been deleted".format(coll.name))
