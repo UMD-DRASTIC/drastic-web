@@ -442,10 +442,16 @@ def delete_collection(request, path):
         raise PermissionDenied
 
     if request.method == "POST":
+        parent_coll = Collection.find(coll.container)
+        if parent_coll:
+            parent_path = parent_coll.path()
+        else:
+            # Just in case
+            parent_path = ''
         Collection.delete_all(coll.path())
         messages.add_message(request, messages.INFO,
                              "The collection '{}' has been deleted".format(coll.name))
-        return redirect('archive:view', path='')
+        return redirect('archive:view', path=parent_path)
 
     return render(request, 'archive/delete.html', {'collection': coll})
 
