@@ -1,10 +1,10 @@
 {% extends "archive/base.html" %}
 
-{% block title %}Edit Resource - {{resource.name}}{% endblock title %}
+{% block title %}Edit Item - {{resource.name}}{% endblock title %}
 
 {% block main_content %}
 
-<h2>Edit Resource - {{resource.name}}
+<h2>Edit Item - {{resource.name}}
     <a class="pull-right btn btn-default" href="{% url 'archive:view' path=collection.path %}">
     &laquo; Back to '{{ container.name }}' collection
     </a>

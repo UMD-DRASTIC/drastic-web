@@ -1,10 +1,10 @@
 {% extends "archive/base.html" %}
 
-{% block title %}Resource - {{resource.name}}{% endblock title %}
+{% block title %}Item - {{resource.name}}{% endblock title %}
 
 {% block main_content %}
 
-<h2>Resource - {{resource.name}}
+<h2>Item - {{resource.name}}
         <a class="btn btn-success pull-right" href="{% url 'archive:download' path=resource.path %}">Download file</a>
 
 </h2>
@@ -27,10 +27,10 @@
 
     <div class="control-bar">
         {% if resource.can_edit %}
-        <a class="btn btn-info" href='{% url "archive:edit_resource" path=resource.path %}'%}>Edit Resource</a>
+        <a class="btn btn-info" href='{% url "archive:edit_resource" path=resource.path %}'%}>Edit Item</a>
         {% endif %}
         {% if resource.can_delete %}
-        <a class="btn btn-danger" href='{% url "archive:delete_resource" path=resource.path %}'>Delete Resource</a>
+        <a class="btn btn-danger" href='{% url "archive:delete_resource" path=resource.path %}'>Delete Item</a>
         {% endif %}
 
         <div class="clearfix"></div>
