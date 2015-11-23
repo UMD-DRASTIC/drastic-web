@@ -60,6 +60,13 @@ from indigo.metadata import (
 )
 
 
+
+def notify_agent(resource_id, event=""):
+    from nodes.client import choose_client
+    client = choose_client()
+    client.notify(resource_id, event)
+    
+    
 # TODO: Move this to a helper
 def get_extension(name):
     _, ext = os.path.splitext(name)
@@ -161,6 +168,8 @@ def new_resource(request, parent):
                                            mimetype=data['file'].content_type,
                                            type=get_extension(data['file'].name))
                 resource.create_acl(data['read_access'], data['write_access'])
+                
+                notify_agent(resource.path(), "resource:new")
                 messages.add_message(request, messages.INFO,
                                      u"New resource '{}' created" .format(resource.name))
 
@@ -213,6 +222,8 @@ def edit_resource(request, path):
 
                 resource.update(metadata=metadata)
                 resource.create_acl(data['read_access'], data['write_access'])
+                
+                notify_agent(self.path(), "resource:edit")
                 edited_resource_signal.send(None, user=request.user, resource=resource)
 
                 return redirect('archive:resource_view', path=resource.path())
@@ -254,6 +265,7 @@ def delete_resource(request, path):
     container = resource.get_container()
     if request.method == "POST":
         resource.delete()
+        notify_agent(self.path(), "resource:delete")
         messages.add_message(request, messages.INFO,
                              "The resource '{}' has been deleted".format(resource.name))
         return redirect('archive:view', path=container.path())
