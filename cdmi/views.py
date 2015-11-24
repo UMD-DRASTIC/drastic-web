@@ -291,27 +291,27 @@ class CassandraAuthentication(BasicAuthentication):
         user = User.find(userid)
         if user is None or not user.is_active():
             raise exceptions.AuthenticationFailed(_('User inactive or deleted.'))
-        if not user.authenticate(password) and not ldapAuthenticate(username, password):
+        if not user.authenticate(password) and not ldapAuthenticate(userid, password):
             raise exceptions.AuthenticationFailed(_('Invalid username/password.'))
         return (user, None)
 
-    def ldapAuthenticate(username, password):
-        if settings.AUTH_LDAP_SERVER_URI is None:
-            return False
+def ldapAuthenticate(username, password):
+    if settings.AUTH_LDAP_SERVER_URI is None:
+        return False
 
-        if settings.AUTH_LDAP_USER_DN_TEMPLATE is None:
-            return False
+    if settings.AUTH_LDAP_USER_DN_TEMPLATE is None:
+        return False
 
-        try:
-            connection = ldap.initialize(settings.AUTH_LDAP_SERVER_URI)
-            connection.protocol_version = ldap.VERSION3
-            user_dn = settings.AUTH_LDAP_USER_DN_TEMPLATE % {"user": username}
-            connection.simple_bind_s(user_dn, password)
-            return True
-        except ldap.INVALID_CREDENTIALS:
-            return False
-        except ldap.SERVER_DOWN:
-            return False
+    try:
+        connection = ldap.initialize(settings.AUTH_LDAP_SERVER_URI)
+        connection.protocol_version = ldap.VERSION3
+        user_dn = settings.AUTH_LDAP_USER_DN_TEMPLATE % {"user": username}
+        connection.simple_bind_s(user_dn, password)
+        return True
+    except ldap.INVALID_CREDENTIALS:
+        return False
+    except ldap.SERVER_DOWN:
+        return False
 
 
 class CDMIView(APIView):
