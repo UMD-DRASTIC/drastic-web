@@ -223,7 +223,7 @@ def edit_resource(request, path):
                 resource.update(metadata=metadata)
                 resource.create_acl(data['read_access'], data['write_access'])
                 
-                notify_agent(self.path(), "resource:edit")
+                notify_agent(resource.path(), "resource:edit")
                 edited_resource_signal.send(None, user=request.user, resource=resource)
 
                 return redirect('archive:resource_view', path=resource.path())
@@ -265,7 +265,7 @@ def delete_resource(request, path):
     container = resource.get_container()
     if request.method == "POST":
         resource.delete()
-        notify_agent(self.path(), "resource:delete")
+        notify_agent(resource.path(), "resource:delete")
         messages.add_message(request, messages.INFO,
                              "The resource '{}' has been deleted".format(resource.name))
         return redirect('archive:view', path=container.path())
