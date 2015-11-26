@@ -50,6 +50,7 @@ from indigo.models.resource import Resource
 from indigo.models.collection import Collection
 from indigo.models.group import Group
 from indigo.models.search import SearchIndex
+from indigo.models.search2 import SearchIndex2
 from indigo.models.errors import (
     CollectionConflictError,
     ResourceConflictError
@@ -336,8 +337,23 @@ def search(request):
     }
 
     terms = [x.lower() for x in query.split(' ')]
-
     ctx['results'] = SearchIndex.find(terms, request.user)
+    ctx['total'] = len(ctx['results'])
+    ctx['highlights'] = terms
+
+    return render(request, 'archive/search.html', ctx)
+
+
+def search2(request):
+    query = request.GET.get('q')
+
+    ctx = {
+        "q": query
+    }
+
+    terms = [x.lower() for x in query.split(' ')]
+
+    ctx['results'] = SearchIndex2.find(terms, request.user)
     ctx['total'] = len(ctx['results'])
     ctx['highlights'] = terms
 

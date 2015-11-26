@@ -20,6 +20,7 @@ from django.conf.urls import url
 urlpatterns = [
     url(r'^$', 'archive.views.home', name='home'),
     url(r'^search$', 'archive.views.search', name='search'),
+    url(r'^search2$', 'archive.views.search2', name='search2'),
 
     url(r'^resource(?P<path>.*)$', 'archive.views.resource_view', name='resource_view'),
     url(r'^new/collection(?P<parent>.*)$', 'archive.views.new_collection', name='new_collection'),
