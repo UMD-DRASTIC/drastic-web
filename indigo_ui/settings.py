@@ -28,7 +28,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '6-_8dk(b%2#=tk6swe2d(ejqy#xh-lj*c=e$1%sz3togm3270('
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 ALLOWED_HOSTS = []
 
@@ -162,15 +162,30 @@ COMPRESS_UPLOADS = True
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'debug.log'),
+            'formatter': 'verbose',
         },
     },
     'loggers': {
         'indigo': {
             'handlers': ['console'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'DEBUG'),
+        },
+        'django': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
         },
     },
 }

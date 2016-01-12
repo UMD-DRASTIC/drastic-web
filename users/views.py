@@ -192,6 +192,8 @@ def userlogout(request):
 def user_view(request, id):
     # argument is the login name, not the uuid in Cassandra
     user = User.find(id)
+    if not user:
+        raise Http404
 
     ctx = {
         "req_user": request.user,

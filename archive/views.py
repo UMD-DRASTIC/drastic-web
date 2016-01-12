@@ -337,7 +337,9 @@ def search(request):
     }
 
     terms = [x.lower() for x in query.split(' ')]
-    ctx['results'] = SearchIndex.find(terms, request.user)
+    
+    results = SearchIndex2.find(terms, request.user)
+    ctx['results'] = results
     ctx['total'] = len(ctx['results'])
     ctx['highlights'] = terms
 
