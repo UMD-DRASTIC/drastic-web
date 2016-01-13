@@ -478,6 +478,8 @@ def edit_collection(request, path):
 @login_required
 def delete_collection(request, path):
     coll = Collection.find_by_path(path)
+    if not coll:
+        raise Http404
 
     if not coll.user_can(request.user, "delete"):
         raise PermissionDenied
