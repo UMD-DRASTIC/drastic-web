@@ -21,7 +21,8 @@ import json
 import os
 from django.http import (
     StreamingHttpResponse,
-    Http404
+    Http404,
+    HttpResponse,
 )
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import (
@@ -95,6 +96,14 @@ def resource_view(request, path):
         raise PermissionDenied
 
     container = Collection.find_by_path(resource.container)
+    if not container:
+        # TODO: the container has to be there. If not it may be a network
+        # issue with Cassandra so we try again before raising an error to the
+        # user
+        container = Collection.find_by_path(resource.container)
+        if not container:
+            return HttpResponse(status=408,
+                                content="Unable to find parent container '{}'".format(resource.container))
 
     paths = []
     full = ""
@@ -423,6 +432,8 @@ def new_collection(request, parent):
 @login_required
 def edit_collection(request, path):
     coll = Collection.find_by_path(path)
+    if not coll:
+        raise Http404
 
     if not coll.user_can(request.user, "edit"):
         raise PermissionDenied
