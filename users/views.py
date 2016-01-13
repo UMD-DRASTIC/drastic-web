@@ -123,7 +123,6 @@ def delete_user(request, id):
 def edit_user(request, id):
     # Requires edit on user
     user = User.find(id)
-    print id, user
     if not user:
         raise Http404()
 
@@ -134,8 +133,7 @@ def edit_user(request, id):
         form = UserForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
-
-            user.update(username=data['username'],
+            user.update(name=data['username'],
                         email=data['email'],
                         administrator=data['administrator'],
                         active=data['active'])
