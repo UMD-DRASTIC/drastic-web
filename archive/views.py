@@ -181,7 +181,7 @@ def new_resource(request, parent):
                 
                 notify_agent(resource.path(), "resource:new")
                 messages.add_message(request, messages.INFO,
-                                     u"New resource '{}' created" .format(resource.name))
+                                     u"New resource '{}' created" .format(resource.get_name()))
 
                 new_resource_signal.send(None, user=request.user, resource=resource)
             except ResourceConflictError:
@@ -247,7 +247,7 @@ def edit_resource(request, path):
             metadata = '{"":""}'
 
         read_access, write_access = resource.read_acl()
-        initial_data = {'name': resource.name, 'metadata': metadata,
+        initial_data = {'name': resource.get_name(), 'metadata': metadata,
                         'read_access': read_access,
                         'write_access': write_access
                        }
@@ -277,7 +277,7 @@ def delete_resource(request, path):
         resource.delete()
         notify_agent(resource.path(), "resource:delete")
         messages.add_message(request, messages.INFO,
-                             "The resource '{}' has been deleted".format(resource.name))
+                             "The resource '{}' has been deleted".format(resource.get_name()))
         return redirect('archive:view', path=container.path())
 
     # Requires delete on resource
@@ -520,7 +520,7 @@ def download(request, path):
 
     resp = StreamingHttpResponse(streaming_content=driver.chunk_content(),
                                  content_type=resource.mimetype)
-    resp['Content-Disposition'] = 'attachment; filename="{}"'.format(resource.name)
+    resp['Content-Disposition'] = 'attachment; filename="{}"'.format(resource.get_name())
 
     return resp
 

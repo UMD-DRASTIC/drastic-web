@@ -51,6 +51,7 @@ from rest_framework.renderers import (
     BaseRenderer,
     JSONRenderer
 )
+from rest_framework.decorators import api_view, authentication_classes
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -201,15 +202,6 @@ def parse_range_header(specifier, len_content):
 
     return ranges
 
-def crud_id(request, id):
-    # The URL should end with a '/'
-    id = id.replace('/', '')
-    collection = Collection.find_by_id(id)
-    if collection:
-        return redirect('cdmi:api_cdmi', path=collection.path())
-    else:
-        return Response(HTTP_404_NOT_FOUND)
-
 def capabilities(request, path):
     """Read all fields from an existing capability object.
 
@@ -314,6 +306,23 @@ def ldapAuthenticate(username, password):
         return False
 
 
+@api_view(['GET', 'PUT'])
+@authentication_classes([CassandraAuthentication,])
+def crud_id(request, id):
+    # The URL should end with a '/'
+    id = id.replace('/', '')
+    collection = Collection.find_by_id(id)
+    if collection:
+        print "redirect"
+        return redirect('cdmi:api_cdmi', path=collection.path())
+    else:
+        resource = Resource.find_by_id(id)
+        if resource:
+            return redirect('cdmi:api_cdmi', path=resource.path())
+        else:
+            return Response(status=HTTP_404_NOT_FOUND)
+
+
 class CDMIView(APIView):
     authentication_classes = (CassandraAuthentication,)
     renderer_classes = (CDMIContainerRenderer, CDMIObjectRenderer,
@@ -348,7 +357,6 @@ class CDMIView(APIView):
 
     @csrf_exempt
     def get(self, request, path='/', format=None):
-        print path
         self.user = request.user
         # Check HTTP Headers for CDMI version or HTTP mode
         self.cdmi_version = self.check_cdmi_version()
@@ -532,6 +540,8 @@ class CDMIView(APIView):
             return Response(status=HTTP_403_FORBIDDEN)
 
         cdmi_resource = CDMIResource(resource, self.api_root)
+        if cdmi_resource.is_reference():
+            return self.read_data_object_reference(cdmi_resource)
         if self.http_mode:
             return self.read_data_object_http(cdmi_resource)
         else:
@@ -613,6 +623,10 @@ class CDMIView(APIView):
         return Response(data,
                         content_type=cdmi_resource.get_mimetype(),
                         status=st)
+
+    def read_data_object_reference(self, cdmi_resource):
+        return Response(status=HTTP_302_FOUND,
+                        headers={'Location': cdmi_resource.get_url()})
 
 
     def put_container(self, path):
@@ -746,6 +760,14 @@ class CDMIView(APIView):
         return resource
 
 
+    def create_reference(self, parent, name, url, mimetype="application/cdmi-object"):
+        resource = Resource.create(name=name,
+                                   container=parent,
+                                   url=url,
+                                   type=mimetype)
+        return resource
+
+
     def put_data_object_http(self, parent, name, resource):
         tmp = self.request.content_type.split("; ")
         content_type = tmp[0]
@@ -808,13 +830,16 @@ class CDMIView(APIView):
             # Only one of these fields shall be specified in any given
             # operation.
             return Response(status=HTTP_400_BAD_REQUEST)
-        elif value_type and value_type[0] != 'value':
-            # Only 'value' is supported at the present time
+        elif value_type and not (value_type[0] in ['value', 'reference']):
+            # Only 'value' and 'reference' are supported at the present time
+            # TODO: Check the authorized fields with reference
             return Response(status=HTTP_400_BAD_REQUEST)
+
+        is_reference = False    # By default
         # CDMI specification mandates that text/plain should be used
         # where mimetype is absent
         mimetype = request_body.get('mimetype', 'text/plain')
-        if value_type:
+        if value_type[0] == 'value':
             content = request_body.get(value_type[0])
             encoding = request_body.get('valuetransferencoding', 'utf-8')
             if encoding == "base64":
@@ -838,6 +863,17 @@ class CDMIView(APIView):
             else:
                 # Create resource
                 resource = self.create_data_object(parent, name, content, mimetype)
+        elif value_type[0] == 'reference':
+            is_reference = True
+            if resource:
+                # References cannot be updated so we can't create a new one
+                return Response(status=HTTP_409_CONFLICT)
+            url = request_body.get(value_type[0])
+            resource = self.create_reference(parent,
+                                             name,
+                                             url,
+                                             mimetype)
+
         cdmi_resource = CDMIResource(resource, self.api_root)
         # Assemble metadata
         metadata_body = request_body.get("metadata", {})
@@ -858,6 +894,8 @@ class CDMIView(APIView):
             if field == "value" and value and "valuerange" in body:
                 body["valuerange"] = value
             try:
+                if field in ["value", "valuerange"] and is_reference:
+                    continue
                 body[field] = get_field()
             except Exception as e:
                 self.logger.error("Parameter problem for resource '{}' ('{}={}')".format(cdmi_resource.get_path(), field, value))

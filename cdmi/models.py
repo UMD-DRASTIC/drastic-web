@@ -39,7 +39,7 @@ class CDMIContainer(object):
         child_c = list(self.collection.get_child_collections())
         child_c = [ "{}/".format(c.name) for c in child_c ]
         child_r = list(self.collection.get_child_resources())
-        child_r = [ "{}".format(c.name) for c in child_r ]
+        child_r = [ "{}".format(c.get_name()) for c in child_r ]
         res = child_c + child_r
         
         if range:
@@ -177,7 +177,7 @@ class CDMIResource(object):
     def get_objectName(self):
         """Conditional name of the object
         We don't support objects only accessible by ID so this is mandatory"""
-        return self.resource.name
+        return self.resource.get_name()
 
     def get_objectType(self):
         """Mandatory Object type"""
@@ -212,6 +212,9 @@ class CDMIResource(object):
             val = "100"
         return val
 
+    def get_url(self):
+        return self.resource.url
+
     def get_value(self, range=None):
         driver = get_driver(self.resource.url)
         # TODO: Improve that for large files. Check what CDMI recommends
@@ -238,3 +241,7 @@ class CDMIResource(object):
         """Mandatory - The value transfer encoding used for the data object
         value"""
         return "utf-8"
+
+    def is_reference(self):
+        """Check if the resource is a reference"""
+        return self.resource.is_reference()
