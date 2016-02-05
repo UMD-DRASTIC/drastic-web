@@ -1,0 +1,10 @@
+global-include *.py
+global-include *.md
+global-include *.html
+recursive-include indigo_ui/static *
+recursive-include static *
+include gunicorn.conf
+include requirements.txt
+
+prune dist
+prune indigo_web.egg_info
