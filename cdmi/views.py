@@ -125,6 +125,17 @@ FIELDS_DATA_OBJECT = OrderedDict([('objectType', None),
                                   ('valuerange', None)
                                   ])
 
+FIELDS_REFERENCE = OrderedDict([('objectType', None),
+                                ('objectID', None),
+                                ('objectName', None),
+                                ('parentURI', None),
+                                ('parentID', None),
+                                ('domainURI', None),
+                                ('capabilitiesURI', None),
+                                ('metadata', None),
+                                ('reference', None)
+                               ])
+
 # Body fields for reading a container object using CDMI, the value of the
 # dictionary can be used to pass parameters
 FIELDS_CONTAINER = OrderedDict([('objectType', None),
@@ -540,10 +551,11 @@ class CDMIView(APIView):
             return Response(status=HTTP_403_FORBIDDEN)
 
         cdmi_resource = CDMIResource(resource, self.api_root)
-        if cdmi_resource.is_reference():
-            return self.read_data_object_reference(cdmi_resource)
         if self.http_mode:
-            return self.read_data_object_http(cdmi_resource)
+            if cdmi_resource.is_reference():
+                return self.read_data_object_reference(cdmi_resource)
+            else:
+                return self.read_data_object_http(cdmi_resource)
         else:
             return self.read_data_object_cdmi(cdmi_resource)
 
@@ -555,18 +567,25 @@ class CDMIView(APIView):
         if not http_accepts.intersection(set(['application/cdmi-object', '*/*'])):
             self.logger.error("Accept header problem for resource '{}' ('{}')".format(path, http_accepts))
             return Response(status=HTTP_406_NOT_ACCEPTABLE)
+        
+        if cdmi_resource.is_reference():
+            field_dict = FIELDS_REFERENCE
+            status = HTTP_302_FOUND
+        else:
+            field_dict = FIELDS_DATA_OBJECT
+            status = HTTP_200_OK
 
         # TODO: multipart/mixed, byte ranges for value, filter metadata
         if self.request.GET:
             fields = {}
             for field, value in self.request.GET.items():
-                if field in FIELDS_DATA_OBJECT.keys():
+                if field in field_dict.keys():
                     fields[field] = value
                 else:
                     self.logger.error("Parameter problem for resource '{}' ('{} undefined')".format(path, field))
                     return Response(status=HTTP_406_NOT_ACCEPTABLE)
         else:
-            fields = FIELDS_DATA_OBJECT
+            fields = field_dict
 
         # Obtained information in a dictionary
         body = OrderedDict()
@@ -588,7 +607,8 @@ class CDMIView(APIView):
 
         self.logger.info("{} reads resource at '{}' using CDMI".format(self.user.name, path))
         response = JsonResponse(body,
-                                content_type="application/cdmi-object")
+                                content_type="application/cdmi-object",
+                                status=status)
         response["X-CDMI-Specification-Version"] = "1.1"
         return response
 
@@ -839,40 +859,41 @@ class CDMIView(APIView):
         # CDMI specification mandates that text/plain should be used
         # where mimetype is absent
         mimetype = request_body.get('mimetype', 'text/plain')
-        if value_type[0] == 'value':
-            content = request_body.get(value_type[0])
-            encoding = request_body.get('valuetransferencoding', 'utf-8')
-            if encoding == "base64":
-                try:
-                    content = base64.b64decode(content)
-                except TypeError:
+        if value_type:
+            if value_type[0] == 'value':
+                content = request_body.get(value_type[0])
+                encoding = request_body.get('valuetransferencoding', 'utf-8')
+                if encoding == "base64":
+                    try:
+                        content = base64.b64decode(content)
+                    except TypeError:
+                        return Response(status=HTTP_400_BAD_REQUEST)
+                elif encoding != "utf-8":
                     return Response(status=HTTP_400_BAD_REQUEST)
-            elif encoding != "utf-8":
-                return Response(status=HTTP_400_BAD_REQUEST)
-            metadata['cdmi_valuetransferencoding'] = encoding
-            if resource:
-                # Update value
-                # TODO: Delete old blob
-                blob = self.create_blob(name, content)
-                blob_id = blob.id
-                url = "cassandra://{}".format(blob_id)
-                resource.update(url=url,
-                                size=len(content),
-                                mimetype=mimetype,
-                                type=get_extension(name))
-            else:
-                # Create resource
-                resource = self.create_data_object(parent, name, content, mimetype)
-        elif value_type[0] == 'reference':
-            is_reference = True
-            if resource:
-                # References cannot be updated so we can't create a new one
-                return Response(status=HTTP_409_CONFLICT)
-            url = request_body.get(value_type[0])
-            resource = self.create_reference(parent,
-                                             name,
-                                             url,
-                                             mimetype)
+                metadata['cdmi_valuetransferencoding'] = encoding
+                if resource:
+                    # Update value
+                    # TODO: Delete old blob
+                    blob = self.create_blob(name, content)
+                    blob_id = blob.id
+                    url = "cassandra://{}".format(blob_id)
+                    resource.update(url=url,
+                                    size=len(content),
+                                    mimetype=mimetype,
+                                    type=get_extension(name))
+                else:
+                    # Create resource
+                    resource = self.create_data_object(parent, name, content, mimetype)
+            elif value_type[0] == 'reference':
+                is_reference = True
+                if resource:
+                    # References cannot be updated so we can't create a new one
+                    return Response(status=HTTP_409_CONFLICT)
+                url = request_body.get(value_type[0])
+                resource = self.create_reference(parent,
+                                                 name,
+                                                 url,
+                                                 mimetype)
 
         cdmi_resource = CDMIResource(resource, self.api_root)
         # Assemble metadata
@@ -885,8 +906,13 @@ class CDMIView(APIView):
         metadata.update(metadata_body)
         resource.update(metadata=metadata)
 
+        if cdmi_resource.is_reference():
+            field_dict = FIELDS_REFERENCE
+        else:
+            field_dict = FIELDS_DATA_OBJECT
+
         body = OrderedDict()
-        for field, value in FIELDS_DATA_OBJECT.items():
+        for field, value in field_dict.items():
             get_field = getattr(cdmi_resource, 'get_{}'.format(field))
             # If we ask the value with a range value we need to update the
             # valuerange value

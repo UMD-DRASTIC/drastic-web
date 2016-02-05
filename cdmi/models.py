@@ -212,6 +212,9 @@ class CDMIResource(object):
             val = "100"
         return val
 
+    def get_reference(self):
+        return self.resource.url
+
     def get_url(self):
         return self.resource.url
 
