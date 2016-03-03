@@ -27,8 +27,11 @@ import logging
 import ldap
 
 from django.shortcuts import redirect
-from django.http import JsonResponse
-from django.http import HttpResponse
+from django.http import (
+    JsonResponse,
+    HttpResponse,
+    StreamingHttpResponse
+)
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.translation import ugettext_lazy as _
@@ -573,6 +576,8 @@ class CDMIView(APIView):
             status = HTTP_302_FOUND
         else:
             field_dict = FIELDS_DATA_OBJECT
+            del field_dict['value']
+            del field_dict['valuerange']
             status = HTTP_200_OK
 
         # TODO: multipart/mixed, byte ranges for value, filter metadata
@@ -640,9 +645,9 @@ class CDMIView(APIView):
             content_type = cdmi_resource.get_mimetype()
             st = HTTP_200_OK
 
-        return Response(data,
-                        content_type=cdmi_resource.get_mimetype(),
-                        status=st)
+        return StreamingHttpResponse(streaming_content=data,
+                                     content_type=cdmi_resource.get_mimetype(),
+                                     status=st)
 
     def read_data_object_reference(self, cdmi_resource):
         return Response(status=HTTP_302_FOUND,
