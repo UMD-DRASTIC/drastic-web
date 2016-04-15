@@ -61,23 +61,28 @@
             <th>Mimetype</th>
             <td>{{resource.mimetype|default:"Not set"}}</td>
         </tr>
+        {% if resource.size %}
         <tr>
             <th>Size (in bytes)</th>
             <td>{{resource.size|default:"Not set"}}</td>
         </tr>
+        {% endif %}
         <tr>
             <th>Collection</th>
             <td><a href="/archive/view{{ container_path }}">{{ container.name }}</a></td>
         </tr>
+        {% if resource.create_ts %}
         <tr>
             <th>Created date/time</th>
             <td>{{resource.create_ts}}</td>
         </tr>
+        {% endif %}
+        {% if resource.modified_ts %}
         <tr>
             <th>Modified date/time</th>
             <td>{{resource.modified_ts}}</td>
         </tr>
-        
+        {% endif %}
         <tr>
             <th>CDMI URL:</th>
             <td><a href='{% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}/api/cdmi{{resource.path}}'>

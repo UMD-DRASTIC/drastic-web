@@ -6,7 +6,7 @@
 
 <h2>Edit Collection - {{collection.name}}
     <a class="pull-right btn btn-default" href="{% url 'archive:view' path=collection.path %}">
-    &laquo; Back to '{{ collection.name }}' collection
+    &laquo; Back to '{{ collection.get_name }}' collection
     </a>
 </h2>
 <hr/>

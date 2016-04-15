@@ -27,9 +27,10 @@ class IndigoAppConfig(AppConfig):
         from indigo.models import initialise, Collection
 
         cfg = get_config(None)
-        initialise(cfg.get('KEYSPACE', 'indigo'), hosts=cfg.get('CASSANDRA_HOSTS', ('127.0.0.1', )))
+        initialise(keyspace=cfg.get('KEYSPACE', 'indigo'),
+                   hosts=cfg.get('CASSANDRA_HOSTS', ('127.0.0.1', )))
 
-        root = Collection.get_root_collection()
+        root = Collection.find("/")
         if not root:
             print "Creating root collection"
             Collection.create_root()

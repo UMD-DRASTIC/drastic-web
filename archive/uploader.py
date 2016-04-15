@@ -27,24 +27,23 @@ from django.core.files.uploadhandler import (
 )
 from django.core.files.uploadedfile import InMemoryUploadedFile
 
-from indigo.models import (
-    Blob,
-    BlobPart
-)
+from indigo.models import DataObject
 
 
 class AgentUploader(FileUploadHandler):
 
-    chunk_size = 1048576 # 1 Mb chunks
+#    chunk_size = 1048576 # 1 Mb chunks
 
     def new_file(self, field_name, file_name, content_type, content_length, charset, content_type_extra):
         """
         A new file is starting, we should prep Cassandra for a new upload
         """
         self.file_name = file_name
-        self.blob = Blob.create()
         self.content_type = content_type
         self.hasher = hashlib.sha256()
+        self.data = None
+        self.uuid = None
+        self.seq_number = 0
 
         raise StopFutureHandlers()
 
@@ -55,26 +54,26 @@ class AgentUploader(FileUploadHandler):
         """
         print u"Received {} bytes".format(len(raw_data))
 
-        print settings.COMPRESS_UPLOADS
         if settings.COMPRESS_UPLOADS:
             # Compress the raw_data and store that instead
             f = StringIO()
             z = zipfile.ZipFile(f, "w", zipfile.ZIP_DEFLATED)
             z.writestr("data", raw_data)
             z.close()
-
+ 
             data = f.getvalue()
             f.close()
         else:
             data = raw_data
-
-        part = BlobPart.create(blob_id=self.blob.id, compressed=settings.COMPRESS_UPLOADS, content=data)
-        parts = self.blob.parts or []
-        parts.append(part.id)
-        self.blob.update(parts=parts)
+        
+        if not self.uuid:
+            data_object = DataObject.create(data, settings.COMPRESS_UPLOADS)
+            self.uuid = data_object.id
+        else:
+            DataObject.append_chunk(self.uuid, data, self.seq_number, settings.COMPRESS_UPLOADS)
+        self.seq_number += 1
 
         self.hasher.update(data)
-
 
         return None
 
@@ -86,10 +85,9 @@ class AgentUploader(FileUploadHandler):
             we wrote to the DB.
         """
         print u"File upload complete with {} bytes".format(file_size)
-        self.blob.update(size=file_size, hash=self.hasher.hexdigest())
 
         uploaded = CassandraUploadedFile(name=self.file_name,
-                                         content=str(self.blob.id),
+                                         content=str(self.uuid),
                                          content_type=self.content_type,
                                          length=file_size)
         return uploaded

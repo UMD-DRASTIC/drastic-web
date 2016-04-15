@@ -18,7 +18,6 @@ limitations under the License.
 import mimetypes
 from collections import OrderedDict
 
-from indigo.drivers import get_driver
 from indigo.models.collection import Collection
 
 class CDMIContainer(object):
@@ -31,15 +30,13 @@ class CDMIContainer(object):
     def get_capabilitiesURI(self):
         """Mandatory URI to the capabilities for the object"""
         return ('{0}/cdmi_capabilities/container{1}'
-                ''.format(self.api_root, self.collection.path())
+                ''.format(self.api_root, self.collection.path)
                )
 
     def get_children(self, range=None):
         """Mandatory - Names of the children objects in the container object."""
-        child_c = list(self.collection.get_child_collections())
-        child_c = [ "{}/".format(c.name) for c in child_c ]
-        child_r = list(self.collection.get_child_resources())
-        child_r = [ "{}".format(c.get_name()) for c in child_r ]
+        child_c , child_r = self.collection.get_child()
+        child_c = [ "{}/".format(c) for c in child_c ]
         res = child_c + child_r
         
         if range:
@@ -53,8 +50,8 @@ class CDMIContainer(object):
 
     def get_childrenrange(self):
         """Mandatory - The children of the container expressed as a range"""
-        nb_child = (self.collection.get_child_collection_count() +
-                    self.collection.get_child_resource_count())
+        child_container , child_dataobject = self.collection.get_child()
+        nb_child = len(child_container) + len(child_dataobject)
         if nb_child != 0:
             return "{}-{}".format(0, nb_child-1)
         else:
@@ -64,6 +61,7 @@ class CDMIContainer(object):
         """Mandatory - A string indicating if the object is still in the
         process of being created or updated by another operation,"""
         val = self.collection.get_metadata_key("cdmi_completionStatus")
+        print val
         if not val:
             val = "Complete"
         return val
@@ -79,7 +77,7 @@ class CDMIContainer(object):
 
     def get_objectID(self):
         """Mandatory object ID of the object"""
-        return self.collection.id
+        return self.collection._id
 
     def get_objectName(self):
         """Conditional name of the object
@@ -93,24 +91,24 @@ class CDMIContainer(object):
     def get_parentID(self):
         """Conditional Object ID of the parent container object
         We don't support objects only accessible by ID so this is mandatory"""
-        parent_path = self.collection.container
+        parent_path = self.collection.parent
         if self.collection.is_root:
             parent_path = "/"
-        parent = Collection.find_by_path(parent_path)
-        return parent.id
+        parent = Collection.find(parent_path)
+        return parent._id
 
     def get_parentURI(self):
         """Conditional URI for the parent object
         We don't support objects only accessible by ID so this is mandatory"""
         # A container in CDMI has a '/' at the end but we don't (except for the
         # root)
-        parent_path = self.collection.container
+        parent_path = self.collection.parent
         if parent_path != '/' and parent_path != "null":
             parent_path = "{}/".format(parent_path)
         return "{}".format(parent_path)
 
     def get_path(self):
-        return self.collection.path()
+        return self.collection.path
 
     def get_percentComplete(self):
         """Optional - Indicate the percentage of completion as a numeric
@@ -130,10 +128,13 @@ class CDMIResource(object):
         self.resource = indigo_resource
         self.api_root = api_root
 
+    def chunk_content(self):
+        return self.resource.chunk_content()
+
     def get_capabilitiesURI(self):
         """Mandatory URI to the capabilities for the object"""
         return ('{0}/cdmi_capabilities/dataobject{1}'
-                ''.format(self.api_root, self.resource.path())
+                ''.format(self.api_root, self.resource.path)
                )
 
     def get_completionStatus(self):
@@ -172,7 +173,7 @@ class CDMIResource(object):
 
     def get_objectID(self):
         """Mandatory object ID of the object"""
-        return self.resource.id
+        return self.resource._id
 
     def get_objectName(self):
         """Conditional name of the object
@@ -186,21 +187,21 @@ class CDMIResource(object):
     def get_parentID(self):
         """Conditional Object ID of the parent container object
         We don't support objects only accessible by ID so this is mandatory"""
-        parent = Collection.find_by_path(self.resource.container)
-        return parent.id
+        parent = Collection.find(self.resource.parent)
+        return parent._id
 
     def get_parentURI(self):
         """Conditional URI for the parent object
         We don't support objects only accessible by ID so this is mandatory"""
         # A container in CDMI has a '/' at the end but we don't (except for the
         # root)
-        parent_path = self.resource.container
+        parent_path = self.resource.parent
         if parent_path != '/':
             parent_path = "{}/".format(parent_path)
         return "{}".format(parent_path)
 
     def get_path(self):
-        return self.resource.path()
+        return self.resource.path
 
     def get_percentComplete(self):
         """Optional - Indicate the percentage of completion as a numeric
@@ -247,4 +248,4 @@ class CDMIResource(object):
 
     def is_reference(self):
         """Check if the resource is a reference"""
-        return self.resource.is_reference()
+        return self.resource.is_reference

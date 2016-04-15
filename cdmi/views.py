@@ -74,12 +74,12 @@ from cdmi.models import (
     CDMIResource
 )
 from archive.uploader import CassandraUploadedFile
-from indigo.drivers import get_driver
-from indigo.models.resource import Resource
-from indigo.models.collection import Collection
-from indigo.models.blob import Blob
-from indigo.models.blob import BlobPart
-from indigo.models.user import User
+from indigo.models import (
+    Collection,
+    DataObject,
+    Resource,
+    User
+)
 from indigo.util import split
 from indigo.util_archive import (
     path_exists,
@@ -93,6 +93,9 @@ from indigo.models.errors import (
     NoSuchResourceError,
     NoWriteAccessError,
 )
+
+
+CHUNK_SIZE = 1048576
 
 # List of supported version (In order so the first to be picked up is the most
 # recent one
@@ -170,6 +173,11 @@ def check_cdmi_version(request):
              return version
      else:
          return ""
+
+
+def chunkstring(string, length):
+    return (string[0+i:length+i] for i in range(0, len(string), length))
+
 
 # TODO: Move this to a helper
 def get_extension(name):
@@ -327,7 +335,6 @@ def crud_id(request, id):
     id = id.replace('/', '')
     collection = Collection.find_by_id(id)
     if collection:
-        print "redirect"
         return redirect('cdmi:api_cdmi', path=collection.path())
     else:
         resource = Resource.find_by_id(id)
@@ -442,9 +449,9 @@ class CDMIView(APIView):
 
 
     def delete_data_object(self, path):
-        resource = Resource.find_by_path(path)
+        resource = Resource.find(path)
         if not resource:
-            collection = Collection.find_by_path(path)
+            collection = Collection.find(path)
             if collection:
                 self.logger.info("Fail to delete resource at '{}', test if it's a collection".format(path))
                 return self.delete_container(path)
@@ -461,20 +468,20 @@ class CDMIView(APIView):
 
 
     def delete_container(self, path):
-        collection = Collection.find_by_path(path)
+        collection = Collection.find(path)
         if not collection:
             self.logger.info("Fail to delete collection at '{}'".format(path))
             return Response(status=HTTP_404_NOT_FOUND)
         if not collection.user_can(self.user, "delete"):
             self.logger.warning("User {} tried to delete container '{}'".format(self.user, path))
             return Response(status=HTTP_403_FORBIDDEN)
-        Collection.delete_all(collection.path())
+        Collection.delete_all(collection.path)
         self.logger.info("The container '{}' was successfully deleted".format(path))
         return Response(status=HTTP_204_NO_CONTENT)
 
 
     def read_container(self, path):
-        collection = Collection.find_by_path(path)
+        collection = Collection.find(path)
         if not collection:
             self.logger.info("Fail to read a collection at '{}'".format(path))
             return Response(status=HTTP_404_NOT_FOUND)
@@ -540,9 +547,9 @@ class CDMIView(APIView):
 
     def read_data_object(self, path):
         """Read a resource"""
-        resource = Resource.find_by_path(path)
+        resource = Resource.find(path)
         if not resource:
-            collection = Collection.find_by_path(path)
+            collection = Collection.find(path)
             if collection:
                 self.logger.info("Fail to read a resource at '{}', test if it's a collection".format(path))
                 return self.read_container(path)
@@ -576,8 +583,10 @@ class CDMIView(APIView):
             status = HTTP_302_FOUND
         else:
             field_dict = FIELDS_DATA_OBJECT
-            del field_dict['value']
-            del field_dict['valuerange']
+            if 'value' in field_dict:
+                del field_dict['value']
+            if 'valuerange' in field_dict:
+                del field_dict['valuerange']
             status = HTTP_200_OK
 
         # TODO: multipart/mixed, byte ranges for value, filter metadata
@@ -601,14 +610,18 @@ class CDMIView(APIView):
             # The valuerange should be created before the value field
             if field == "value" and value and "valuerange" in body:
                 body["valuerange"] = value
-            try:
-                if value:
-                    body[field] = get_field(value)
-                else:
-                    body[field] = get_field()
-            except Exception as e:
-                self.logger.error("Parameter problem for resource '{}' ('{}={}')".format(path, field, value))
-                return Response(status=HTTP_406_NOT_ACCEPTABLE)
+#             try:
+#                 if value:
+#                     body[field] = get_field(value)
+#                 else:
+#                     body[field] = get_field()
+#             except Exception as e:
+#                 self.logger.error("Parameter problem for resource '{}' ('{}={}')".format(path, field, value))
+#                 return Response(status=HTTP_406_NOT_ACCEPTABLE)
+            if value:
+                body[field] = get_field(value)
+            else:
+                body[field] = get_field()
 
         self.logger.info("{} reads resource at '{}' using CDMI".format(self.user.name, path))
         response = JsonResponse(body,
@@ -639,15 +652,16 @@ class CDMIView(APIView):
                     data.append(value[start:stop])
                 data = ''.join([d for d in data])
                 st = HTTP_206_PARTIAL_CONTENT
+            return StreamingHttpResponse(streaming_content=data,
+                                         content_type=cdmi_resource.get_mimetype(),
+                                         status=st)
         else:
             self.logger.info("{} reads resource at '{}' using HTTP".format(self.user.name, path))
-            data = cdmi_resource.get_value()
             content_type = cdmi_resource.get_mimetype()
             st = HTTP_200_OK
-
-        return StreamingHttpResponse(streaming_content=data,
-                                     content_type=cdmi_resource.get_mimetype(),
-                                     status=st)
+            return StreamingHttpResponse(streaming_content=cdmi_resource.chunk_content(),
+                                         content_type=cdmi_resource.get_mimetype(),
+                                         status=st)
 
     def read_data_object_reference(self, cdmi_resource):
         return Response(status=HTTP_302_FOUND,
@@ -656,7 +670,7 @@ class CDMIView(APIView):
 
     def put_container(self, path):
         # Check if the container already exists
-        collection = Collection.find_by_path(path)
+        collection = Collection.find(path)
         if collection:
             # Update
             if not collection.user_can(self.user, "edit"):
@@ -674,7 +688,7 @@ class CDMIView(APIView):
         if name.startswith("cdmi_"):
             return Response("cdmi_ prefix is not a valid name for a container",
                             status=HTTP_400_BAD_REQUEST)
-        parent_collection = Collection.find_by_path(parent)
+        parent_collection = Collection.find(parent)
         if not parent_collection:
             self.logger.info("Fail to create a collection at '{}', parent collection doesn't exist".format(path))
             return Response(status=HTTP_404_NOT_FOUND)
@@ -744,12 +758,8 @@ class CDMIView(APIView):
             collection.update(metadata=metadata)
         return HTTP_204_NO_CONTENT
 
-    def create_blob(self, name, content):
-        raw_data = content
-        chunk_size = 1048576
-        blob = Blob.create()
-        hasher = hashlib.sha256()
 
+    def create_data_object(self, raw_data):
         if settings.COMPRESS_UPLOADS:
             # Compress the raw_data and store that instead
             f = StringIO()
@@ -760,28 +770,38 @@ class CDMIView(APIView):
             f.close()
         else:
             data = raw_data
-
-        part = BlobPart.create(blob_id=blob.id,
-                               compressed=settings.COMPRESS_UPLOADS,
-                               content=data)
-        parts = blob.parts or []
-        parts.append(part.id)
-        blob.update(parts=parts)
-
-        hasher.update(data)
-        return blob
+        data_object = DataObject.create(data, settings.COMPRESS_UPLOADS)
+        return data_object.id
 
 
-    def create_data_object(self, parent, name, content, mimetype):
-        blob = self.create_blob(name, content)
-        blob_id = blob.id
-        url = "cassandra://{}".format(blob_id)
+    def append_data_object(self, uuid, seq_num, raw_data):
+        if settings.COMPRESS_UPLOADS:
+            # Compress the raw_data and store that instead
+            f = StringIO()
+            z = zipfile.ZipFile(f, "w", zipfile.ZIP_DEFLATED)
+            z.writestr("data", raw_data)
+            z.close()
+            data = f.getvalue()
+            f.close()
+        else:
+            data = raw_data
+        DataObject.append_chunk(uuid, data, seq_num, settings.COMPRESS_UPLOADS)
+
+
+    def create_resource(self, parent, name, content, mimetype):
+        uuid = None
+        seq_num = 0
+        for chk in chunkstring(content, CHUNK_SIZE):
+            if uuid is None:
+                uuid = self.create_data_object(chk)
+            else:
+                self.append_data_object(uuid, seq_num, chk)
+            seq_num += 1
+        url = "cassandra://{}".format(uuid)
         resource = Resource.create(name=name,
                                    container=parent,
                                    url=url,
-                                   size=len(content),
-                                   mimetype=mimetype,
-                                   type=get_extension(name))
+                                   mimetype=mimetype)
         return resource
 
 
@@ -789,7 +809,7 @@ class CDMIView(APIView):
         resource = Resource.create(name=name,
                                    container=parent,
                                    url=url,
-                                   type=mimetype)
+                                   mimetype=mimetype)
         return resource
 
 
@@ -807,18 +827,24 @@ class CDMIView(APIView):
         content = self.request.body
         if resource:
             # Update value
-            # TODO: Delete old blob
-            blob = self.create_blob(name, content)
-            blob_id = blob.id
-            url = "cassandra://{}".format(blob_id)
+            # Delete old blobs
+            resource.delete_blobs()
+            uuid = None
+            seq_num = 0
+            for chk in chunkstring(content, CHUNK_SIZE):
+                if uuid is None:
+                    uuid = self.create_data_object(chk)
+                else:
+                    self.append_data_object(uuid, seq_num, chk)
+                seq_num += 1
+            url = "cassandra://{}".format(uuid)
+            
             resource.update(url=url,
-                            size=len(content),
-                            mimetype=mimetype,
-                            type=get_extension(name))
+                            mimetype=mimetype)
             return Response(status=HTTP_204_NO_CONTENT)
         else:
             # Create resource
-            self.create_data_object(parent, name, content, mimetype)
+            self.create_resource(parent, name, content, mimetype)
             return Response(status=HTTP_201_CREATED)
 
 
@@ -884,11 +910,10 @@ class CDMIView(APIView):
                     url = "cassandra://{}".format(blob_id)
                     resource.update(url=url,
                                     size=len(content),
-                                    mimetype=mimetype,
-                                    type=get_extension(name))
+                                    mimetype=mimetype)
                 else:
                     # Create resource
-                    resource = self.create_data_object(parent, name, content, mimetype)
+                    resource = self.create_resource(parent, name, content, mimetype)
             elif value_type[0] == 'reference':
                 is_reference = True
                 if resource:
@@ -902,7 +927,7 @@ class CDMIView(APIView):
 
         cdmi_resource = CDMIResource(resource, self.api_root)
         # Assemble metadata
-        metadata_body = request_body.get("metadata", {})
+        metadata_body = request_body.get("metadata", {'cdmi_mimetype': mimetype})
         if "cdmi_acl" in metadata_body:
             # We treat acl metadata in a specific way
             cdmi_acl = metadata_body["cdmi_acl"]
@@ -940,7 +965,7 @@ class CDMIView(APIView):
 
     def put_data_object(self, path):
         # Check if a collection with the name exists
-        collection = Collection.find_by_path(path)
+        collection = Collection.find(path)
         if collection:
             # Try to put a data_object when a collection of the same name
             # already exists
@@ -949,7 +974,7 @@ class CDMIView(APIView):
 
         parent, name = split(path)
         # Check if the resource already exists
-        resource = Resource.find_by_path(path)
+        resource = Resource.find(path)
         # Check permissions
         if resource:
             # Update Resource
@@ -958,7 +983,7 @@ class CDMIView(APIView):
                 return Response(status=HTTP_403_FORBIDDEN)
         else:
             # Create Resource
-            parent_collection = Collection.find_by_path(parent)
+            parent_collection = Collection.find(parent)
             if not parent_collection:
                 self.logger.info("Fail to create a resource at '{}', collection doesn't exist".format(path))
                 return Response(status=HTTP_404_NOT_FOUND)

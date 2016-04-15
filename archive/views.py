@@ -18,6 +18,7 @@ limitations under the License.
 
 import collections
 import json
+import requests
 import os
 from django.http import (
     StreamingHttpResponse,
@@ -46,12 +47,12 @@ from activity.signals import (
     edited_collection_signal
 )
 
-from indigo.drivers import get_driver
-from indigo.models.resource import Resource
-from indigo.models.collection import Collection
-from indigo.models.group import Group
-from indigo.models.search import SearchIndex
-from indigo.models.search2 import SearchIndex2
+from indigo.models import (
+    Collection,
+    Group,
+    Resource,
+    SearchIndex
+)
 from indigo.models.errors import (
     CollectionConflictError,
     ResourceConflictError
@@ -59,6 +60,9 @@ from indigo.models.errors import (
 from indigo.metadata import (
     get_resource_keys,
     get_collection_keys
+)
+from indigo.util import (
+    merge,
 )
 
 
@@ -87,36 +91,36 @@ def home(request):
 # Collection specific view functions
 ##############################################################################
 @login_required()
-def resource_view(request, path):
-    resource = Resource.find_by_path(path)
+def view_resource(request, path):
+    resource = Resource.find(path)
     if not resource:
         raise Http404()
 
     if not resource.user_can(request.user, "read"):
         raise PermissionDenied
 
-    container = Collection.find_by_path(resource.container)
+    container = Collection.find(resource.parent)
     if not container:
         # TODO: the container has to be there. If not it may be a network
         # issue with Cassandra so we try again before raising an error to the
         # user
-        container = Collection.find_by_path(resource.container)
+        container = Collection.find(resource.parent)
         if not container:
             return HttpResponse(status=408,
-                                content="Unable to find parent container '{}'".format(resource.container))
+                                content="Unable to find parent container '{}'".format(resource.parent))
 
     paths = []
     full = ""
-    for p in container.path().split('/'):
+    for p in container.path.split('/'):
         if not p:
             continue
         full = u"{}/{}".format(full, p)
         paths.append((p, full))
 
     ctx = {
-        "resource": resource.to_dict(request.user),
+        "resource": resource.full_dict(request.user),
         "container": container,
-        "container_path": container.path(),
+        "container_path": container.path,
         "collection_paths": paths
     }
     return render(request, 'archive/resource/view.html', ctx)
@@ -124,10 +128,7 @@ def resource_view(request, path):
 
 @login_required
 def new_resource(request, parent):
-    if parent == '/':
-        parent_collection = Collection.get_root_collection()
-    else:
-        parent_collection = Collection.find_by_path(parent)
+    parent_collection = Collection.find(parent)
     # Inherits perms from container by default.
     if not parent_collection:
         raise Http404()
@@ -170,25 +171,26 @@ def new_resource(request, parent):
                     else:
                         metadata[k] = v
 
-                resource = Resource.create(name=name,
-                                           container=parent_collection.path(),
+                resource = Resource.create(container=parent_collection.path,
+                                           name=name,
                                            metadata=metadata,
                                            url=url,
-                                           size=data['file'].size,
-                                           mimetype=data['file'].content_type,
-                                           type=get_extension(data['file'].name))
-                resource.create_acl(data['read_access'], data['write_access'])
+                                           mimetype=data['file'].content_type)
                 
-                notify_agent(resource.path(), "resource:new")
-                messages.add_message(request, messages.INFO,
-                                     u"New resource '{}' created" .format(resource.get_name()))
-
-                new_resource_signal.send(None, user=request.user, resource=resource)
+              # size=data['file'].size,
+              #type=get_extension(data['file'].name)
+                #resource.create_acl(data['read_access'], data['write_access'])
+#                 
+#                 notify_agent(resource.path(), "resource:new")
+#                 messages.add_message(request, messages.INFO,
+#                                      u"New resource '{}' created" .format(resource.get_name()))
+# 
+#                 new_resource_signal.send(None, user=request.user, resource=resource)
             except ResourceConflictError:
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use within the current collection")
 
-            return redirect('archive:view', path=parent_collection.path())
+            return redirect('archive:view', path=parent_collection.path)
     else:
         form = ResourceNewForm(initial=initial)
 
@@ -203,11 +205,11 @@ def new_resource(request, parent):
 @login_required
 def edit_resource(request, path):
     # Requires edit on resource
-    resource = Resource.find_by_path(path)
+    resource = Resource.find(path)
     if not resource:
         raise Http404()
 
-    container = Collection.find_by_path(resource.container)
+    container = Collection.find(resource.parent)
     if not container:
         raise Http404()
 
@@ -233,10 +235,7 @@ def edit_resource(request, path):
                 resource.update(metadata=metadata)
                 resource.create_acl(data['read_access'], data['write_access'])
                 
-                notify_agent(resource.path(), "resource:edit")
-                edited_resource_signal.send(None, user=request.user, resource=resource)
-
-                return redirect('archive:resource_view', path=resource.path())
+                return redirect('archive:resource_view', path=resource.path)
             except ResourceConflictError:
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use withinin the current collection")
@@ -247,7 +246,7 @@ def edit_resource(request, path):
             metadata = '{"":""}'
 
         read_access, write_access = resource.read_acl()
-        initial_data = {'name': resource.get_name(), 'metadata': metadata,
+        initial_data = {'name': resource.name, 'metadata': metadata,
                         'read_access': read_access,
                         'write_access': write_access
                        }
@@ -265,20 +264,19 @@ def edit_resource(request, path):
 
 @login_required
 def delete_resource(request, path):
-    resource = Resource.find_by_path(path)
+    resource = Resource.find(path)
     if not resource:
         raise Http404
 
     if not resource.user_can(request.user, "delete"):
         raise PermissionDenied
 
-    container = resource.get_container()
+    container = Collection.find(resource.parent)
     if request.method == "POST":
         resource.delete()
-        notify_agent(resource.path(), "resource:delete")
         messages.add_message(request, messages.INFO,
-                             "The resource '{}' has been deleted".format(resource.get_name()))
-        return redirect('archive:view', path=container.path())
+                             "The resource '{}' has been deleted".format(resource.name))
+        return redirect('archive:view', path=container.path)
 
     # Requires delete on resource
     ctx = {
@@ -294,13 +292,12 @@ def delete_resource(request, path):
 ##############################################################################
 
 @login_required()
-def navigate(request, path):
-    # client = get_default_client()
-    if not path or path == '/':
-        collection = Collection.get_root_collection()
-    else:
-        collection = Collection.find_by_path(path or '/')
+def view_collection(request, path):
+    if not path:
+        path = '/'
+    collection = Collection.find(path)
 
+    print collection
     if not collection:
         raise Http404()
 
@@ -311,26 +308,19 @@ def navigate(request, path):
 
     paths = []
     full = ""
-    for p in collection.path().split('/'):
+    for p in collection.path.split('/'):
         if not p:
             continue
         full = u"{}/{}".format(full, p)
         paths.append((p, full))
 
-    def child_collections():
-        return collection.get_child_collections()
-
-    def child_resources():
-        return collection.get_child_resources()
-
-    children_c = list(child_collections())
-    children_c.sort(key=lambda x: x['name'].lower())
-    children_r = list(child_resources())
-    children_r.sort(key=lambda x: x['name'].lower())
+    children_c, children_r = collection.get_child()
+    children_c.sort(key=lambda x: x.lower())
+    children_r.sort(key=lambda x: x.lower())
     ctx = {
         'collection': collection.to_dict(request.user),
-        'children_c': [c.to_dict(request.user) for c in children_c],
-        'children_r': [c.to_dict(request.user) for c in children_r],
+        'children_c': [Collection.find(merge(path,c)).to_dict(request.user) for c in children_c],
+        'children_r': [Resource.find(merge(path,c)).simple_dict(request.user) for c in children_r],
         'collection_paths': paths,
         'empty': len(children_c) + len(children_r) == 0,
     }
@@ -347,7 +337,7 @@ def search(request):
 
     terms = [x.lower() for x in query.split(' ')]
     
-    results = SearchIndex2.find(terms, request.user)
+    results = SearchIndex.find(terms, request.user)
     ctx['results'] = results
     ctx['total'] = len(ctx['results'])
     ctx['highlights'] = terms
@@ -364,7 +354,7 @@ def search2(request):
 
     terms = [x.lower() for x in query.split(' ')]
 
-    ctx['results'] = SearchIndex2.find(terms, request.user)
+    ctx['results'] = SearchIndex.find(terms, request.user)
     ctx['total'] = len(ctx['results'])
     ctx['highlights'] = terms
 
@@ -373,10 +363,7 @@ def search2(request):
 
 @login_required
 def new_collection(request, parent):
-    if parent == '/':
-        parent_collection = Collection.get_root_collection()
-    else:
-        parent_collection = Collection.find_by_path(parent)
+    parent_collection = Collection.find(parent)
 
     if not parent_collection.user_can(request.user, "write"):
         raise PermissionDenied
@@ -400,7 +387,7 @@ def new_collection(request, parent):
             data = form.cleaned_data
             try:
                 name = data['name']
-                parent = parent_collection.path()
+                parent = parent_collection.path
                 metadata = {}
 
                 for k, v in json.loads(data['metadata']):
@@ -418,10 +405,11 @@ def new_collection(request, parent):
                 collection.create_acl(data['read_access'], data['write_access'])
                 messages.add_message(request, messages.INFO,
                                      u"New collection '{}' created" .format(collection.name))
-
-                new_collection_signal.send(None, user=request.user, collection=collection)
-                return redirect('archive:view', path=collection.path())
+                return redirect('archive:view', path=collection.path)
             except CollectionConflictError:
+                messages.add_message(request, messages.ERROR,
+                                     "That name is in use in the current collection")
+            except ResourceConflictError:
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use in the current collection")
 
@@ -431,7 +419,7 @@ def new_collection(request, parent):
 
 @login_required
 def edit_collection(request, path):
-    coll = Collection.find_by_path(path)
+    coll = Collection.find(path)
     if not coll:
         raise Http404
 
@@ -455,8 +443,7 @@ def edit_collection(request, path):
                 data = form.cleaned_data
                 coll.update(metadata=metadata)
                 coll.create_acl(data['read_access'], data['write_access'])
-                edited_collection_signal.send(None, user=request.user, collection=coll)
-                return redirect('archive:view', path=coll.path())
+                return redirect('archive:view', path=coll.path)
             except CollectionConflictError:
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use in the current collection")
@@ -466,7 +453,8 @@ def edit_collection(request, path):
         if not md:
             metadata = '{"":""}'
         read_access, write_access = coll.read_acl()
-        initial_data = {'name': coll.name, 'metadata': metadata,
+        initial_data = {'name': coll.name,
+                        'metadata': metadata,
                         'read_access': read_access,
                         'write_access': write_access}
         form = CollectionForm(initial=initial_data)
@@ -477,7 +465,8 @@ def edit_collection(request, path):
 
 @login_required
 def delete_collection(request, path):
-    coll = Collection.find_by_path(path)
+    "delete_coll"
+    coll = Collection.find(path)
     if not coll:
         raise Http404
 
@@ -485,13 +474,14 @@ def delete_collection(request, path):
         raise PermissionDenied
 
     if request.method == "POST":
-        parent_coll = Collection.find(coll.container)
+        parent_coll = Collection.find(coll.path)
         if parent_coll:
-            parent_path = parent_coll.path()
+            parent_path = parent_coll.parent
         else:
             # Just in case
             parent_path = ''
-        Collection.delete_all(coll.path())
+        print "parent", parent_path, coll.path
+        Collection.delete_all(coll.path)
         messages.add_message(request, messages.INFO,
                              "The collection '{}' has been deleted".format(coll.name))
         return redirect('archive:view', path=parent_path)
@@ -507,20 +497,21 @@ def download(request, path):
 
     We will send appropriate user auth to the agent.
     """
-    from indigo.models.blob import Blob, BlobPart
-
-    resource = Resource.find_by_path(path)
+    resource = Resource.find(path)
     if not resource:
         raise Http404
 
     if not resource.user_can(request.user, "read"):
         raise PermissionDenied
 
-    driver = get_driver(resource.url)
-
-    resp = StreamingHttpResponse(streaming_content=driver.chunk_content(),
-                                 content_type=resource.mimetype)
-    resp['Content-Disposition'] = 'attachment; filename="{}"'.format(resource.get_name())
+    if resource.is_reference:
+        r = requests.get(resource.url, stream=True)
+        resp = StreamingHttpResponse(streaming_content=r,
+                                     content_type=resource.mimetype)
+    else:
+        resp = StreamingHttpResponse(streaming_content=resource.chunk_content(),
+                                     content_type=resource.mimetype)
+    resp['Content-Disposition'] = 'attachment; filename="{}"'.format(resource.name)
 
     return resp
 
@@ -531,7 +522,7 @@ def preview(request, path):
     Find the preview of the resource with the given ID and deliver it.  This will
     be rendered in the iframe of the resource view page.
     """
-    resource = Resource.find_by_path(path)
+    resource = Resource.find(path)
     if not resource:
         raise Http404
 
