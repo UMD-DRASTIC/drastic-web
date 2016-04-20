@@ -99,15 +99,15 @@ def view_resource(request, path):
     if not resource.user_can(request.user, "read"):
         raise PermissionDenied
 
-    container = Collection.find(resource.parent)
+    container = Collection.find(resource.container)
     if not container:
         # TODO: the container has to be there. If not it may be a network
         # issue with Cassandra so we try again before raising an error to the
         # user
-        container = Collection.find(resource.parent)
+        container = Collection.find(resource.container)
         if not container:
             return HttpResponse(status=408,
-                                content="Unable to find parent container '{}'".format(resource.parent))
+                                content="Unable to find parent container '{}'".format(resource.container))
 
     paths = []
     full = ""
@@ -175,17 +175,11 @@ def new_resource(request, parent):
                                            name=name,
                                            metadata=metadata,
                                            url=url,
-                                           mimetype=data['file'].content_type)
-                
-              # size=data['file'].size,
-              #type=get_extension(data['file'].name)
-                #resource.create_acl(data['read_access'], data['write_access'])
-#                 
-#                 notify_agent(resource.path(), "resource:new")
-#                 messages.add_message(request, messages.INFO,
-#                                      u"New resource '{}' created" .format(resource.get_name()))
-# 
-#                 new_resource_signal.send(None, user=request.user, resource=resource)
+                                           mimetype=data['file'].content_type,
+                                           user_uuid=request.user.uuid)
+                resource.create_acl(data['read_access'], data['write_access'])
+                messages.add_message(request, messages.INFO,
+                                     u"New resource '{}' created" .format(resource.get_name()))
             except ResourceConflictError:
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use within the current collection")
@@ -209,7 +203,7 @@ def edit_resource(request, path):
     if not resource:
         raise Http404()
 
-    container = Collection.find(resource.parent)
+    container = Collection.find(resource.container)
     if not container:
         raise Http404()
 
@@ -231,8 +225,7 @@ def edit_resource(request, path):
 
             try:
                 data = form.cleaned_data
-
-                resource.update(metadata=metadata)
+                resource.update(metadata=metadata, user_uuid=request.user.uuid)
                 resource.create_acl(data['read_access'], data['write_access'])
                 
                 return redirect('archive:resource_view', path=resource.path)
@@ -240,7 +233,7 @@ def edit_resource(request, path):
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use withinin the current collection")
     else:
-        md = resource.get_metadata()
+        md = resource.get_cdmi_metadata()
         metadata = json.dumps(md)
         if not md:
             metadata = '{"":""}'
@@ -271,9 +264,9 @@ def delete_resource(request, path):
     if not resource.user_can(request.user, "delete"):
         raise PermissionDenied
 
-    container = Collection.find(resource.parent)
+    container = Collection.find(resource.container)
     if request.method == "POST":
-        resource.delete()
+        resource.delete(user_uuid=request.user.uuid)
         messages.add_message(request, messages.INFO,
                              "The resource '{}' has been deleted".format(resource.name))
         return redirect('archive:view', path=container.path)
@@ -297,7 +290,6 @@ def view_collection(request, path):
         path = '/'
     collection = Collection.find(path)
 
-    print collection
     if not collection:
         raise Http404()
 
@@ -401,7 +393,8 @@ def new_collection(request, parent):
 
                 collection = Collection.create(name=name,
                                                container=parent,
-                                               metadata=metadata)
+                                               metadata=metadata,
+                                               user_uuid=request.user.uuid)
                 collection.create_acl(data['read_access'], data['write_access'])
                 messages.add_message(request, messages.INFO,
                                      u"New collection '{}' created" .format(collection.name))
@@ -441,14 +434,14 @@ def edit_collection(request, path):
 
             try:
                 data = form.cleaned_data
-                coll.update(metadata=metadata)
+                coll.update(metadata=metadata, user_uuid=request.user.uuid)
                 coll.create_acl(data['read_access'], data['write_access'])
                 return redirect('archive:view', path=coll.path)
             except CollectionConflictError:
                 messages.add_message(request, messages.ERROR,
                                      "That name is in use in the current collection")
     else:
-        md = coll.get_metadata()
+        md = coll.get_cdmi_metadata()
         metadata = json.dumps(md)
         if not md:
             metadata = '{"":""}'
@@ -476,12 +469,11 @@ def delete_collection(request, path):
     if request.method == "POST":
         parent_coll = Collection.find(coll.path)
         if parent_coll:
-            parent_path = parent_coll.parent
+            parent_path = parent_coll.container
         else:
             # Just in case
             parent_path = ''
-        print "parent", parent_path, coll.path
-        Collection.delete_all(coll.path)
+        Collection.delete_all(coll.path, user_uuid=request.user.uuid)
         messages.add_message(request, messages.INFO,
                              "The collection '{}' has been deleted".format(coll.name))
         return redirect('archive:view', path=parent_path)

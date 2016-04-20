@@ -6,7 +6,7 @@
 {% endif %}
  -->
 {% if action == 'add' %}
-    {% url 'groups:add_user' id=group.id as post_url %}
+    {% url 'groups:add_user' uuid=group.uuid as post_url %}
 {% endif %}
 
 <form id="addForm" method="POST" action="{{post_url}}" novalidate="novalidate" enctype="multipart/form-data">

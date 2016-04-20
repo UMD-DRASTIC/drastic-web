@@ -34,7 +34,8 @@ class AgentUploader(FileUploadHandler):
 
 #    chunk_size = 1048576 # 1 Mb chunks
 
-    def new_file(self, field_name, file_name, content_type, content_length, charset, content_type_extra):
+    def new_file(self, field_name, file_name, content_type, content_length,
+                 charset, content_type_extra):
         """
         A new file is starting, we should prep Cassandra for a new upload
         """
@@ -68,7 +69,7 @@ class AgentUploader(FileUploadHandler):
         
         if not self.uuid:
             data_object = DataObject.create(data, settings.COMPRESS_UPLOADS)
-            self.uuid = data_object.id
+            self.uuid = data_object.uuid
         else:
             DataObject.append_chunk(self.uuid, data, self.seq_number, settings.COMPRESS_UPLOADS)
         self.seq_number += 1

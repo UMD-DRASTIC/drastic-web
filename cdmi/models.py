@@ -61,7 +61,6 @@ class CDMIContainer(object):
         """Mandatory - A string indicating if the object is still in the
         process of being created or updated by another operation,"""
         val = self.collection.get_metadata_key("cdmi_completionStatus")
-        print val
         if not val:
             val = "Complete"
         return val
@@ -71,13 +70,13 @@ class CDMIContainer(object):
         return ('{0}/cdmi_domains/indigo/'.format(self.api_root))
 
     def get_metadata(self):
-        md = self.collection.get_metadata()
+        md = self.collection.get_cdmi_metadata()
         md.update(self.collection.get_acl_metadata())
         return md
 
     def get_objectID(self):
         """Mandatory object ID of the object"""
-        return self.collection._id
+        return self.collection.uuid
 
     def get_objectName(self):
         """Conditional name of the object
@@ -91,18 +90,18 @@ class CDMIContainer(object):
     def get_parentID(self):
         """Conditional Object ID of the parent container object
         We don't support objects only accessible by ID so this is mandatory"""
-        parent_path = self.collection.parent
+        parent_path = self.collection.container
         if self.collection.is_root:
             parent_path = "/"
         parent = Collection.find(parent_path)
-        return parent._id
+        return parent.uuid
 
     def get_parentURI(self):
         """Conditional URI for the parent object
         We don't support objects only accessible by ID so this is mandatory"""
         # A container in CDMI has a '/' at the end but we don't (except for the
         # root)
-        parent_path = self.collection.parent
+        parent_path = self.collection.container
         if parent_path != '/' and parent_path != "null":
             parent_path = "{}/".format(parent_path)
         return "{}".format(parent_path)
@@ -153,7 +152,7 @@ class CDMIResource(object):
         return self.resource.size
 
     def get_metadata(self):
-        md = self.resource.get_metadata()
+        md = self.resource.get_cdmi_metadata()
         md.update(self.resource.get_acl_metadata())
         return md
 
@@ -173,7 +172,7 @@ class CDMIResource(object):
 
     def get_objectID(self):
         """Mandatory object ID of the object"""
-        return self.resource._id
+        return self.resource.uuid
 
     def get_objectName(self):
         """Conditional name of the object
@@ -187,15 +186,15 @@ class CDMIResource(object):
     def get_parentID(self):
         """Conditional Object ID of the parent container object
         We don't support objects only accessible by ID so this is mandatory"""
-        parent = Collection.find(self.resource.parent)
-        return parent._id
+        parent = Collection.find(self.resource.container)
+        return parent.uuid
 
     def get_parentURI(self):
         """Conditional URI for the parent object
         We don't support objects only accessible by ID so this is mandatory"""
         # A container in CDMI has a '/' at the end but we don't (except for the
         # root)
-        parent_path = self.resource.parent
+        parent_path = self.resource.container
         if parent_path != '/':
             parent_path = "{}/".format(parent_path)
         return "{}".format(parent_path)

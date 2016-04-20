@@ -333,11 +333,11 @@ def ldapAuthenticate(username, password):
 def crud_id(request, id):
     # The URL should end with a '/'
     id = id.replace('/', '')
-    collection = Collection.find_by_id(id)
+    collection = Collection.find_by_uuid(id)
     if collection:
         return redirect('cdmi:api_cdmi', path=collection.path())
     else:
-        resource = Resource.find_by_id(id)
+        resource = Resource.find_by_uuid(id)
         if resource:
             return redirect('cdmi:api_cdmi', path=resource.path())
         else:
@@ -509,6 +509,7 @@ class CDMIView(APIView):
         if self.request.GET:
             fields = {}
             for field, value in self.request.GET.items():
+                print field, value
                 if field in FIELDS_CONTAINER:
                     fields[field] = value
                 else:
@@ -771,7 +772,7 @@ class CDMIView(APIView):
         else:
             data = raw_data
         data_object = DataObject.create(data, settings.COMPRESS_UPLOADS)
-        return data_object.id
+        return data_object.uuid
 
 
     def append_data_object(self, uuid, seq_num, raw_data):
@@ -906,7 +907,7 @@ class CDMIView(APIView):
                     # Update value
                     # TODO: Delete old blob
                     blob = self.create_blob(name, content)
-                    blob_id = blob.id
+                    blob_id = blob.uuid
                     url = "cassandra://{}".format(blob_id)
                     resource.update(url=url,
                                     size=len(content),

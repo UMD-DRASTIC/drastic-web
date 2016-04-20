@@ -18,7 +18,7 @@ limitations under the License.
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 
-from indigo.models.activity import Activity
+#from indigo.models.activity import Activity
 
 @login_required
 def home(request):

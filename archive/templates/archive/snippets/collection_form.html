@@ -8,9 +8,9 @@
 
 
 {% if action == 'edit' %}
-    {% url 'archive:edit' id=collection.id as post_url %}
+    {% url 'archive:edit' uuid=collection.uuid as post_url %}
 {% else %}
-    {% url 'archive:new' parent=collection.id as post_url %}
+    {% url 'archive:new' parent=collection.uuid as post_url %}
 {% endif %}
 
 

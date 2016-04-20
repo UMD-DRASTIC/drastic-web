@@ -228,8 +228,8 @@ def add_user_group(group, ls_users):
     for username in ls_users:
         user = User.find(username)
         if user:
-            if group.id not in user.groups:
-                user.groups.append(group.id)
+            if group.uuid not in user.groups:
+                user.groups.append(group.uuid)
                 user.update(groups=user.groups)
                 added.append(username)
             else:
@@ -267,8 +267,8 @@ def rm_user_group(group, ls_users):
     for username in ls_users:
         user = User.find(username)
         if user:
-            if group.id in user.groups:
-                user.groups.remove(group.id)
+            if group.uuid in user.groups:
+                user.groups.remove(group.uuid)
                 user.update(groups=user.groups)
                 removed.append(username)
             else:

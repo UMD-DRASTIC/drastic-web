@@ -6,7 +6,7 @@
 {% endif %}
 
 {% if action == 'edit' %}
-    {% url 'groups:edit_group' id=group.id as post_url %}
+    {% url 'groups:edit_group' uuid=group.uuid as post_url %}
 {% else %}
     {% url 'groups:new_group' as post_url %}
 {% endif %}

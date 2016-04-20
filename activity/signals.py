@@ -26,7 +26,7 @@ from django.dispatch import receiver
 from  django.template.loader import get_template
 from django.template import Context
 
-from indigo.models.activity import Activity
+#from indigo.models.activity import Activity
 
 new_resource_signal = django.dispatch.Signal(providing_args=["user", "resource"])
 edited_resource_signal = django.dispatch.Signal(providing_args=["user", "resource"])

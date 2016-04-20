@@ -18,14 +18,14 @@ from indigo.models import (
 
 
 @login_required
-def add_user(request, id):
-    group = Group.find_by_id(id)
+def add_user(request, uuid):
+    group = Group.find_by_uuid(uuid)
     if not group:
         raise Http404
     if not request.user.administrator:
         raise PermissionDenied
     users = [(u.name, u.name) for u in User.objects.all()
-             if not group.id in u.groups]
+             if not group.uuid in u.groups]
     if request.method == 'POST':
         form = GroupAddForm(users, request.POST)
         if form.is_valid():
@@ -34,18 +34,18 @@ def add_user(request, id):
             for username in data.get('users', []):
                 user = User.find(username)
                 if user:
-                    if id not in user.groups:
-                        user.groups.append(id)
+                    if uuid not in user.groups:
+                        user.groups.append(uuid)
                         user.update(groups=user.groups)
-                        notify_agent(group.id, "group:add:{}".format(user.name))
                         added.append("'{}'".format(user.name))
             if added:
                 msg = "{} has been added to the group '{}'".format(", ".join(added),
                                                                    group.name)
+                group.update(user_uuid=request.user.uuid)
             else:
                 msg = "No user has been added to the group '{}'".format(group.name)
             messages.add_message(request, messages.INFO, msg)
-            return redirect('groups:view', id=id)
+            return redirect('groups:view', uuid=uuid)
             
     else:
         form = GroupAddForm(users)
@@ -59,17 +59,16 @@ def add_user(request, id):
 
 
 @login_required
-def delete_group(request, id):
-    group = Group.find_by_id(id)
+def delete_group(request, uuid):
+    group = Group.find_by_uuid(uuid)
     if not group:
         raise Http404
     if not request.user.administrator:
         raise PermissionDenied
     if request.method == "POST":
-        group.delete()
+        group.delete(user_uuid=request.user.uuid)
         messages.add_message(request, messages.INFO,
                              "The group '{}' has been deleted".format(group.name))
-        notify_agent(group.id, "groups:delete")
         return redirect('groups:home')
 
     # Requires delete on user
@@ -80,9 +79,9 @@ def delete_group(request, id):
 
 
 @login_required
-def edit_group(request, id):
+def edit_group(request, uuid):
     # Requires edit on user
-    group = Group.find(id)
+    group = Group.find(uuid)
     if not group:
         raise Http404()
 
@@ -93,8 +92,8 @@ def edit_group(request, id):
         form = GroupForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
-            group.update(name=data['name'])
-            notify_agent(group.id, "group:edit")
+            group.update(name=data['name'],
+                         user_uuid=request.user.uuid)
             return redirect('groups:home')
     else:
         initial_data = {'name': group.name}
@@ -109,9 +108,9 @@ def edit_group(request, id):
 
 
 @login_required
-def group_view(request, id):
+def group_view(request, uuid):
     # argument is the uuid in Cassandra
-    group = Group.find_by_id(id)
+    group = Group.find_by_uuid(uuid)
     ctx = {
         "user": request.user,
         "group_obj": group,
@@ -150,8 +149,8 @@ def new_group(request):
         form = GroupForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
-            group = Group.create(name=data.get("name"))
-            notify_agent(group.id, "groups:new")
+            group = Group.create(name=data.get("name"),
+                                 user_uuid=request.user.uuid)
             messages.add_message(request, messages.INFO,
                              "The group '{}' has been created".format(group.name))
             return redirect('groups:home')
@@ -171,19 +170,19 @@ def notify_agent(user_id, event=""):
 
 
 @login_required
-def rm_user(request, id, uname):
-    group = Group.find_by_id(id)
+def rm_user(request, uuid, uname):
+    group = Group.find_by_uuid(uuid)
     user = User.find(uname)
     if not request.user.administrator:
         raise PermissionDenied
     if user and group:
-        if group.id in user.groups:
-            user.groups.remove(group.id)
+        if group.uuid in user.groups:
+            user.groups.remove(group.uuid)
             user.update(groups=user.groups)
-            notify_agent(group.id, "group:rm:{}".format(user.name))
+            group.update(user_uuid=request.user.uuid)
             msg = "{} has been removed fromthe group '{}'".format(user.name,
                                                                    group.name)
             messages.add_message(request, messages.INFO, msg)
     else:
         raise Http404
-    return redirect('groups:view', id=id)
+    return redirect('groups:view', uuid=uuid)

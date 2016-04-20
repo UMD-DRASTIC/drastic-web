@@ -66,7 +66,7 @@ def userlogin(request):
                 errors = invalid
 
         if not errors:
-            request.session['user'] = unicode(user.id)
+            request.session['user'] = unicode(user.uuid)
             return redirect("/")
 
     ctx = {}
@@ -97,8 +97,8 @@ def ldapAuthenticate(username, password):
 
 
 @login_required
-def delete_user(request, id):
-    user = User.find(id)
+def delete_user(request, uuid):
+    user = User.find(uuid)
     if not user:
         raise Http404
 
@@ -106,7 +106,7 @@ def delete_user(request, id):
         raise PermissionDenied
 
     if request.method == "POST":
-        user.delete()
+        user.delete(user_uuid=request.user.uuid)
         messages.add_message(request, messages.INFO,
                              "The user '{}' has been deleted".format(user.name))
         return redirect('users:home')
@@ -116,13 +116,12 @@ def delete_user(request, id):
         "user": user,
     }
 
-    notify_agent(user.id, "user:delete")
     return render(request, 'users/delete.html', ctx)
 
 @login_required
-def edit_user(request, id):
+def edit_user(request, uuid):
     # Requires edit on user
-    user = User.find(id)
+    user = User.find(uuid)
     if not user:
         raise Http404()
 
@@ -136,10 +135,11 @@ def edit_user(request, id):
             user.update(name=data['username'],
                         email=data['email'],
                         administrator=data['administrator'],
-                        active=data['active'])
+                        active=data['active'],
+                        user_uuid=request.user.uuid)
             if data["password"] != user.password:
-                user.update(password=data["password"])
-            notify_agent(user.id, "user:edit")
+                user.update(password=data["password"],
+                            user_uuid=request.user.uuid)
             return redirect('users:home')
     else:
         initial_data = {'username': user.name,
@@ -169,7 +169,8 @@ def new_user(request):
                         password=data.get("password").encode("ascii", "ignore"),
                         email=data.get("email", ""),
                         administrator=data.get("administrator", False),
-                        active=data.get("active", False))
+                        active=data.get("active", False),
+                        user_uuid=request.user.uuid)
             messages.add_message(request, messages.INFO,
                              "The user '{}' has been created".format(user.name))
             return redirect('users:home')
@@ -187,15 +188,15 @@ def userlogout(request):
     return render(request, 'users/logout.html', {})
 
 @login_required
-def user_view(request, id):
+def user_view(request, uuid):
     # argument is the login name, not the uuid in Cassandra
-    user = User.find(id)
+    user = User.find(uuid)
     if not user:
         raise Http404
 
     ctx = {
         "req_user": request.user,
         "user_obj": user,
-        "groups": [Group.find_by_id(gid) for gid in user.groups]
+        "groups": [Group.find_by_uuid(gid) for gid in user.groups]
     }
     return render(request, 'users/view.html', ctx)
