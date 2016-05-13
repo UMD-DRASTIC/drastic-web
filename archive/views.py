@@ -176,7 +176,8 @@ def new_resource(request, parent):
                                            metadata=metadata,
                                            url=url,
                                            mimetype=data['file'].content_type,
-                                           user_uuid=request.user.uuid)
+                                           user_uuid=request.user.uuid,
+                                           size=data['file'].size)
                 resource.create_acl(data['read_access'], data['write_access'])
                 messages.add_message(request, messages.INFO,
                                      u"New resource '{}' created" .format(resource.get_name()))
