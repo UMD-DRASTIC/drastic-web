@@ -509,7 +509,6 @@ class CDMIView(APIView):
         if self.request.GET:
             fields = {}
             for field, value in self.request.GET.items():
-                print field, value
                 if field in FIELDS_CONTAINER:
                     fields[field] = value
                 else:
