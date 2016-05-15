@@ -32,7 +32,7 @@ from indigo.models import DataObject
 
 class AgentUploader(FileUploadHandler):
 
-#    chunk_size = 1048576 # 1 Mb chunks
+    chunk_size = 1048576 # 1 Mb chunks
 
     def new_file(self, field_name, file_name, content_type, content_length,
                  charset, content_type_extra):
