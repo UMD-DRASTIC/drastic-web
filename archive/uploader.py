@@ -53,7 +53,7 @@ class AgentUploader(FileUploadHandler):
         Will be called to write 1Mb chunks of data (except for the
         last chunk).
         """
-        print u"Received {} bytes".format(len(raw_data))
+        print u"Received {} bytes - {}".format(len(raw_data), self.seq_number)
 
         if settings.COMPRESS_UPLOADS:
             # Compress the raw_data and store that instead

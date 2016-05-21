@@ -80,7 +80,7 @@ def ldapAuthenticate(username, password):
 @authentication_classes((CassandraAuthentication,))
 @permission_classes((IsAuthenticated,))
 def authenticate(request):
-    msg = "User {} is authenticated".format(request.user.name)
+    msg = u"User {} is authenticated".format(request.user.name)
     return Response({"message": msg})
 
 
@@ -155,10 +155,6 @@ def create_group(request):
     group = Group.find(groupname)
     if group:
         return Response("Group already exists", status=HTTP_409_CONFLICT)
-    try:
-        username = request_body['username']
-    except KeyError:
-        return Response("Missing username", status=HTTP_400_BAD_REQUEST)
     group = Group.create(name=groupname)
     return Response(group.to_dict(), status=HTTP_201_CREATED)
 
@@ -202,10 +198,10 @@ def delete_group(request, groupname):
     """Delete a group"""
     group = Group.find(groupname)
     if not group:
-        return Response("Group {} doesn't exists".format(groupname),
+        return Response(u"Group {} doesn't exists".format(groupname),
                         status=HTTP_404_NOT_FOUND)
     group.delete()
-    return Response("Group {} has been deleted".format(groupname),
+    return Response(u"Group {} has been deleted".format(groupname),
                     status=HTTP_200_OK)
 
 
@@ -213,10 +209,10 @@ def delete_user(request, username):
     """Delete a user"""
     user = User.find(username)
     if not user:
-        return Response("User {} doesn't exists".format(username),
+        return Response(u"User {} doesn't exists".format(username),
                         status=HTTP_404_NOT_FOUND)
     user.delete()
-    return Response("User {} has been deleted".format(username),
+    return Response(u"User {} has been deleted".format(username),
                     status=HTTP_200_OK)
 
 
@@ -239,7 +235,7 @@ def add_user_group(group, ls_users):
     msg = []
 
     if added:
-        msg.append("Added {} to the group {}".format(
+        msg.append(u"Added {} to the group {}".format(
             ", ".join(added),
             group.name))
     if already_there:
@@ -247,12 +243,12 @@ def add_user_group(group, ls_users):
             verb = "is"
         else:
             verb = "are"
-        msg.append("{} {} already in the group {}".format(
+        msg.append(u"{} {} already in the group {}".format(
             ", ".join(already_there),
             verb,
             group.name))
     if not_added:
-        msg.append("{} doesn't exist".format(", ".join(not_added)))
+        msg.append(u"{} doesn't exist".format(", ".join(not_added)))
     msg = ", ".join(msg)
     if not_added or already_there:
         return Response(msg, status=HTTP_206_PARTIAL_CONTENT)
@@ -278,18 +274,18 @@ def rm_user_group(group, ls_users):
     msg = []
 
     if removed:
-        msg.append("Removed {} from the group {}".format(", ".join(removed),
+        msg.append(u"Removed {} from the group {}".format(", ".join(removed),
                                                          group.name))
     if not_there:
         if len(not_there) == 1:
             verb = "isn't"
         else:
             verb = "aren't"
-        msg.append("{} {} in the group {}".format(", ".join(not_there),
+        msg.append(u"{} {} in the group {}".format(", ".join(not_there),
                                                   verb,
                                                   group.name))
     if not_exist:
-        msg.append("{} doesn't exist".format(", ".join(not_exist)))
+        msg.append(u"{} doesn't exist".format(", ".join(not_exist)))
     msg = ", ".join(msg)
     if not_there or not_exist:
         return Response(msg, status=HTTP_206_PARTIAL_CONTENT)
@@ -311,7 +307,7 @@ def modify_group(request, groupname):
         return Response("Invalid JSON body", status=HTTP_400_BAD_REQUEST)
     group = Group.find(groupname)
     if not group:
-        return Response("Group {} doesn't exists".format(groupname),
+        return Response(u"Group {} doesn't exists".format(groupname),
                         status=HTTP_404_NOT_FOUND)
 
     # Add users to group
@@ -328,7 +324,7 @@ def ls_group(request, groupname):
     try:
         return Response(group.to_dict())
     except:
-        return Response("Group {} not found".format(groupname),
+        return Response(u"Group {} not found".format(groupname),
                         status=HTTP_404_NOT_FOUND)
 
 
@@ -352,7 +348,7 @@ def modify_user(request, username=""):
             return Response("Missing username", status=HTTP_400_BAD_REQUEST)
     user = User.find(username)
     if not user:
-        return Response("User {} doesn't exists".format(username),
+        return Response(u"User {} doesn't exists".format(username),
                         status=HTTP_404_NOT_FOUND)
     if 'email' in request_body:
         user.update(email=request_body['email'])
@@ -371,7 +367,7 @@ def ls_user(request, username):
     if user:
         return Response(user.to_dict(), status=HTTP_200_OK)
     else:
-        return Response("User {} not found".format(username),
+        return Response(u"User {} not found".format(username),
                         status=HTTP_404_NOT_FOUND)
 
 

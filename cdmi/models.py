@@ -29,16 +29,15 @@ class CDMIContainer(object):
 
     def get_capabilitiesURI(self):
         """Mandatory URI to the capabilities for the object"""
-        return ('{0}/cdmi_capabilities/container{1}'
+        return (u'{0}/cdmi_capabilities/container{1}'
                 ''.format(self.api_root, self.collection.path)
                )
 
     def get_children(self, range=None):
         """Mandatory - Names of the children objects in the container object."""
         child_c , child_r = self.collection.get_child()
-        child_c = [ "{}/".format(c) for c in child_c ]
+        child_c = [ u"{}/".format(c) for c in child_c ]
         res = child_c + child_r
-        
         if range:
             start, stop = ( int(el) for el in range.split("-", 1))
             # map CDMI range value to python index
@@ -92,7 +91,7 @@ class CDMIContainer(object):
         We don't support objects only accessible by ID so this is mandatory"""
         parent_path = self.collection.container
         if self.collection.is_root:
-            parent_path = "/"
+            parent_path = u"/"
         parent = Collection.find(parent_path)
         return parent.uuid
 
@@ -103,8 +102,8 @@ class CDMIContainer(object):
         # root)
         parent_path = self.collection.container
         if parent_path != '/' and parent_path != "null":
-            parent_path = "{}/".format(parent_path)
-        return "{}".format(parent_path)
+            parent_path = u"{}/".format(parent_path)
+        return u"{}".format(parent_path)
 
     def get_path(self):
         return self.collection.path
@@ -132,7 +131,7 @@ class CDMIResource(object):
 
     def get_capabilitiesURI(self):
         """Mandatory URI to the capabilities for the object"""
-        return ('{0}/cdmi_capabilities/dataobject{1}'
+        return (u'{0}/cdmi_capabilities/dataobject{1}'
                 ''.format(self.api_root, self.resource.path)
                )
 
@@ -196,8 +195,8 @@ class CDMIResource(object):
         # root)
         parent_path = self.resource.container
         if parent_path != '/':
-            parent_path = "{}/".format(parent_path)
-        return "{}".format(parent_path)
+            parent_path = u"{}/".format(parent_path)
+        return u"{}".format(parent_path)
 
     def get_path(self):
         return self.resource.path

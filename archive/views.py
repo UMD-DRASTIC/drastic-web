@@ -476,7 +476,7 @@ def delete_collection(request, path):
             parent_path = ''
         Collection.delete_all(coll.path, user_uuid=request.user.uuid)
         messages.add_message(request, messages.INFO,
-                             "The collection '{}' has been deleted".format(coll.name))
+                             u"The collection '{}' has been deleted".format(coll.name))
         return redirect('archive:view', path=parent_path)
 
     return render(request, 'archive/delete.html', {'collection': coll})
@@ -504,7 +504,7 @@ def download(request, path):
     else:
         resp = StreamingHttpResponse(streaming_content=resource.chunk_content(),
                                      content_type=resource.mimetype)
-    resp['Content-Disposition'] = 'attachment; filename="{}"'.format(resource.name)
+    resp['Content-Disposition'] = u'attachment; filename="{}"'.format(resource.name)
 
     return resp
 

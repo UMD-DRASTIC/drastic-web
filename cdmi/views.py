@@ -377,7 +377,7 @@ class CDMIView(APIView):
 
 
     @csrf_exempt
-    def get(self, request, path='/', format=None):
+    def get(self, request, path=u'/', format=None):
         self.user = request.user
         # Check HTTP Headers for CDMI version or HTTP mode
         self.cdmi_version = self.check_cdmi_version()
@@ -388,7 +388,7 @@ class CDMIView(APIView):
 
         # Add a '/' at the beginning if not present
         if not path.startswith('/'):
-            path = "/{}".format(path)
+            path = u"/{}".format(path)
         # In CDMI standard a container is defined by the / at the end
         is_container = path.endswith('/')
         if is_container:
@@ -401,7 +401,7 @@ class CDMIView(APIView):
 
 
     @csrf_exempt
-    def put(self, request, path='/', format=None):
+    def put(self, request, path=u'/', format=None):
         self.user = request.user
         # Check HTTP Headers for CDMI version or HTTP mode
         self.cdmi_version = self.check_cdmi_version()
@@ -412,7 +412,7 @@ class CDMIView(APIView):
 
         # Add a '/' at the beginning if not present
         if not path.startswith('/'):
-            path = "/{}".format(path)
+            path = u"/{}".format(path)
         # In CDMI standard a container is defined by the / at the end
         is_container = path.endswith('/')
         if is_container:
@@ -424,7 +424,7 @@ class CDMIView(APIView):
             return self.put_data_object(path)
 
     @csrf_exempt
-    def delete(self, request, path='/', format=None):
+    def delete(self, request, path=u'/', format=None):
         self.user = request.user
         # Check HTTP Headers for CDMI version or HTTP mode
         self.cdmi_version = self.check_cdmi_version()
@@ -434,7 +434,7 @@ class CDMIView(APIView):
         self.http_mode = self.cdmi_version == "HTTP"
         # Add a '/' at the beginning if not present
         if not path.startswith('/'):
-            path = "/{}".format(path)
+            path = u"/{}".format(path)
         # In CDMI standard a container is defined by the / at the end
         is_container = path.endswith('/')
         if not path or path == '/':
@@ -453,46 +453,46 @@ class CDMIView(APIView):
         if not resource:
             collection = Collection.find(path)
             if collection:
-                self.logger.info("Fail to delete resource at '{}', test if it's a collection".format(path))
+                self.logger.info(u"Fail to delete resource at '{}', test if it's a collection".format(path))
                 return self.delete_container(path)
             else:
-                self.logger.info("Fail to delete resource at '{}'".format(path))
+                self.logger.info(u"Fail to delete resource at '{}'".format(path))
                 return Response(status=HTTP_404_NOT_FOUND)
         if not resource.user_can(self.user, "delete"):
-            self.logger.warning("User {} tried to delete resource '{}'".format(self.user, path))
+            self.logger.warning(u"User {} tried to delete resource '{}'".format(self.user, path))
             return Response(status=HTTP_403_FORBIDDEN)
 
         resource.delete()
-        self.logger.info("The resource '{}' was successfully deleted".format(path))
+        self.logger.info(u"The resource '{}' was successfully deleted".format(path))
         return Response(status=HTTP_204_NO_CONTENT)
 
 
     def delete_container(self, path):
         collection = Collection.find(path)
         if not collection:
-            self.logger.info("Fail to delete collection at '{}'".format(path))
+            self.logger.info(u"Fail to delete collection at '{}'".format(path))
             return Response(status=HTTP_404_NOT_FOUND)
         if not collection.user_can(self.user, "delete"):
-            self.logger.warning("User {} tried to delete container '{}'".format(self.user, path))
+            self.logger.warning(u"User {} tried to delete container '{}'".format(self.user, path))
             return Response(status=HTTP_403_FORBIDDEN)
         Collection.delete_all(collection.path)
-        self.logger.info("The container '{}' was successfully deleted".format(path))
+        self.logger.info(u"The container '{}' was successfully deleted".format(path))
         return Response(status=HTTP_204_NO_CONTENT)
 
 
     def read_container(self, path):
         collection = Collection.find(path)
         if not collection:
-            self.logger.info("Fail to read a collection at '{}'".format(path))
+            self.logger.info(u"Fail to read a collection at '{}'".format(path))
             return Response(status=HTTP_404_NOT_FOUND)
         if not collection.user_can(self.user, "read"):
-            self.logger.warning("User {} tried to read container at '{}'".format(self.user, path))
+            self.logger.warning(u"User {} tried to read container at '{}'".format(self.user, path))
             return Response(status=HTTP_403_FORBIDDEN)
 
         cdmi_container = CDMIContainer(collection, self.api_root)
         if self.http_mode:
             # HTTP Request, unsupported
-            self.logger.warning("Read container '{}' using HTTP is undefined".format(path))
+            self.logger.warning(u"Read container '{}' using HTTP is undefined".format(path))
             return Response(status=HTTP_406_NOT_ACCEPTABLE)
         else:
             # Read using CDMI
@@ -504,7 +504,7 @@ class CDMIView(APIView):
         http_accepts = self.request.META.get('HTTP_ACCEPT', '').split(',')
         http_accepts = set([el.split(";")[0] for el in http_accepts])
         if not http_accepts.intersection(set(['application/cdmi-container', '*/*'])):
-            self.logger.error("Accept header problem for container '{}' ('{}')".format(path, http_accepts))
+            self.logger.error(u"Accept header problem for container '{}' ('{}')".format(path, http_accepts))
             return Response(status=HTTP_406_NOT_ACCEPTABLE)
         if self.request.GET:
             fields = {}
@@ -512,7 +512,7 @@ class CDMIView(APIView):
                 if field in FIELDS_CONTAINER:
                     fields[field] = value
                 else:
-                    self.logger.error("Parameter problem for container '{}' ('{} undefined')".format(path, field))
+                    self.logger.error(u"Parameter problem for container '{}' ('{} undefined')".format(path, field))
                     return Response(status=HTTP_406_NOT_ACCEPTABLE)
         else:
             fields = FIELDS_CONTAINER
@@ -533,11 +533,11 @@ class CDMIView(APIView):
                 else:
                     body[field] = get_field()
             except:
-                self.logger.error("Parameter problem for container '{}' ('{}={}')".format(path, field, value))
+                self.logger.error(u"Parameter problem for container '{}' ('{}={}')".format(path, field, value))
                 return Response(status=HTTP_406_NOT_ACCEPTABLE)
 
 
-        self.logger.info("{} reads container at '{}' using CDMI".format(self.user.name, path))
+        self.logger.info(u"{} reads container at '{}' using CDMI".format(self.user.name, path))
         response = JsonResponse(body,
                                 content_type="application/cdmi-container")
         response["X-CDMI-Specification-Version"] = "1.1"
@@ -551,13 +551,13 @@ class CDMIView(APIView):
         if not resource:
             collection = Collection.find(path)
             if collection:
-                self.logger.info("Fail to read a resource at '{}', test if it's a collection".format(path))
+                self.logger.info(u"Fail to read a resource at '{}', test if it's a collection".format(path))
                 return self.read_container(path)
             else:
-                self.logger.info("Fail to read a resource at '{}'".format(path))
+                self.logger.info(u"Fail to read a resource at '{}'".format(path))
                 return Response(status=HTTP_404_NOT_FOUND)
         if not resource.user_can(self.user, "read"):
-            self.logger.warning("User {} tried to read resource at '{}'".format(self.user, path))
+            self.logger.warning(u"User {} tried to read resource at '{}'".format(self.user, path))
             return Response(status=HTTP_403_FORBIDDEN)
 
         cdmi_resource = CDMIResource(resource, self.api_root)
@@ -575,7 +575,7 @@ class CDMIView(APIView):
         http_accepts = self.request.META.get('HTTP_ACCEPT', '').split(',')
         http_accepts = set([el.split(";")[0] for el in http_accepts])
         if not http_accepts.intersection(set(['application/cdmi-object', '*/*'])):
-            self.logger.error("Accept header problem for resource '{}' ('{}')".format(path, http_accepts))
+            self.logger.error(u"Accept header problem for resource '{}' ('{}')".format(path, http_accepts))
             return Response(status=HTTP_406_NOT_ACCEPTABLE)
         
         if cdmi_resource.is_reference():
@@ -596,7 +596,7 @@ class CDMIView(APIView):
                 if field in field_dict.keys():
                     fields[field] = value
                 else:
-                    self.logger.error("Parameter problem for resource '{}' ('{} undefined')".format(path, field))
+                    self.logger.error(u"Parameter problem for resource '{}' ('{} undefined')".format(path, field))
                     return Response(status=HTTP_406_NOT_ACCEPTABLE)
         else:
             fields = field_dict
@@ -623,7 +623,7 @@ class CDMIView(APIView):
             else:
                 body[field] = get_field()
 
-        self.logger.info("{} reads resource at '{}' using CDMI".format(self.user.name, path))
+        self.logger.info(u"{} reads resource at '{}' using CDMI".format(self.user.name, path))
         response = JsonResponse(body,
                                 content_type="application/cdmi-object",
                                 status=status)
@@ -640,10 +640,10 @@ class CDMIView(APIView):
             range = parse_range_header(specifier,
                                        cdmi_resource.get_length())
             if not range:
-                self.logger.error("Range header parsing failed '{}' for resource '{}'".format(specifier, path))
+                self.logger.error(u"Range header parsing failed '{}' for resource '{}'".format(specifier, path))
                 return Response(status=HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE)
             else:
-                self.logger.info("{} reads resource at '{}' using HTTP, with range '{}'".format(self.user.name, path, range))
+                self.logger.info(u"{} reads resource at '{}' using HTTP, with range '{}'".format(self.user.name, path, range))
                 # Totally inefficient but that's probably not something
                 # we're gonna use a lot
                 value = cdmi_resource.get_value()
@@ -656,7 +656,7 @@ class CDMIView(APIView):
                                          content_type=cdmi_resource.get_mimetype(),
                                          status=st)
         else:
-            self.logger.info("{} reads resource at '{}' using HTTP".format(self.user.name, path))
+            self.logger.info(u"{} reads resource at '{}' using HTTP".format(self.user.name, path))
             content_type = cdmi_resource.get_mimetype()
             st = HTTP_200_OK
             return StreamingHttpResponse(streaming_content=cdmi_resource.chunk_content(),
@@ -674,11 +674,11 @@ class CDMIView(APIView):
         if collection:
             # Update
             if not collection.user_can(self.user, "edit"):
-                self.logger.warning("User {} tried to modify collection at '{}'".format(self.user, path))
+                self.logger.warning(u"User {} tried to modify collection at '{}'".format(self.user, path))
                 return Response(status=HTTP_403_FORBIDDEN)
             if self.http_mode:
                 # HTTP Request, unsupported
-                self.logger.warning("Update collection '{}' using HTTP is undefined".format(path))
+                self.logger.warning(u"Update collection '{}' using HTTP is undefined".format(path))
                 return Response(status=HTTP_406_NOT_ACCEPTABLE)
             res = self.put_container_metadata(collection)
             return Response(status=res)
@@ -690,11 +690,11 @@ class CDMIView(APIView):
                             status=HTTP_400_BAD_REQUEST)
         parent_collection = Collection.find(parent)
         if not parent_collection:
-            self.logger.info("Fail to create a collection at '{}', parent collection doesn't exist".format(path))
+            self.logger.info(u"Fail to create a collection at '{}', parent collection doesn't exist".format(path))
             return Response(status=HTTP_404_NOT_FOUND)
         # Check if user can create a new collection in the collection
         if not parent_collection.user_can(self.user, "write"):
-            self.logger.warning("User {} tried to create new collection at '{}'".format(self.user, path))
+            self.logger.warning(u"User {} tried to create new collection at '{}'".format(self.user, path))
             return Response(status=HTTP_403_FORBIDDEN)
 
         body = OrderedDict()
@@ -774,6 +774,11 @@ class CDMIView(APIView):
         return data_object.uuid
 
 
+    def create_empty_data_object(self):
+        data_object = DataObject.create(None)
+        return data_object.uuid
+
+
     def append_data_object(self, uuid, seq_num, raw_data):
         if settings.COMPRESS_UPLOADS:
             # Compress the raw_data and store that instead
@@ -797,11 +802,14 @@ class CDMIView(APIView):
             else:
                 self.append_data_object(uuid, seq_num, chk)
             seq_num += 1
+        if uuid is None: # Content is null
+            uuid = self.create_empty_data_object()
         url = "cassandra://{}".format(uuid)
         resource = Resource.create(name=name,
                                    container=parent,
                                    url=url,
-                                   mimetype=mimetype)
+                                   mimetype=mimetype,
+                                   size=len(content))
         return resource
 
 
@@ -954,7 +962,7 @@ class CDMIView(APIView):
                     continue
                 body[field] = get_field()
             except Exception as e:
-                self.logger.error("Parameter problem for resource '{}' ('{}={}')".format(cdmi_resource.get_path(), field, value))
+                self.logger.error(u"Parameter problem for resource '{}' ('{}={}')".format(cdmi_resource.get_path(), field, value))
                 return Response(status=HTTP_406_NOT_ACCEPTABLE)
 
         return JsonResponse(body,
@@ -969,7 +977,7 @@ class CDMIView(APIView):
         if collection:
             # Try to put a data_object when a collection of the same name
             # already exists
-            self.logger.info("Impossible to create a new resource, the collection '{}' already exists, try to update it".format(path))
+            self.logger.info(u"Impossible to create a new resource, the collection '{}' already exists, try to update it".format(path))
             return self.put_container(path)
 
         parent, name = split(path)
@@ -979,17 +987,17 @@ class CDMIView(APIView):
         if resource:
             # Update Resource
             if not resource.user_can(self.user, "edit"):
-                self.logger.warning("User {} tried to modify resource at '{}'".format(self.user, path))
+                self.logger.warning(u"User {} tried to modify resource at '{}'".format(self.user, path))
                 return Response(status=HTTP_403_FORBIDDEN)
         else:
             # Create Resource
             parent_collection = Collection.find(parent)
             if not parent_collection:
-                self.logger.info("Fail to create a resource at '{}', collection doesn't exist".format(path))
+                self.logger.info(u"Fail to create a resource at '{}', collection doesn't exist".format(path))
                 return Response(status=HTTP_404_NOT_FOUND)
             # Check if user can create a new resource in the collection
             if not parent_collection.user_can(self.user, "write"):
-                self.logger.warning("User {} tried to create new resource at '{}'".format(self.user, path))
+                self.logger.warning(u"User {} tried to create new resource at '{}'".format(self.user, path))
                 return Response(status=HTTP_403_FORBIDDEN)
         # All permissions are checked, we can proceed to create/update
         if self.http_mode:
