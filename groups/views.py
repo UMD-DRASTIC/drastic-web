@@ -111,6 +111,9 @@ def edit_group(request, uuid):
 def group_view(request, uuid):
     # argument is the uuid in Cassandra
     group = Group.find_by_uuid(uuid)
+    if not group:
+        return redirect('groups:home')
+        #raise Http404
     ctx = {
         "user": request.user,
         "group_obj": group,

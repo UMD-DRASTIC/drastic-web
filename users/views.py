@@ -192,7 +192,8 @@ def user_view(request, uuid):
     # argument is the login name, not the uuid in Cassandra
     user = User.find(uuid)
     if not user:
-        raise Http404
+        return redirect('users:home')
+        #raise Http404
 
     ctx = {
         "req_user": request.user,
