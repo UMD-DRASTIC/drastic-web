@@ -1,5 +1,12 @@
+
   {% for m in metadata %}
-    <span class="label label-{{label}}">
-    {{ m.0 }} = {{ m.1 }}
-    </span>&nbsp;&nbsp;
+    {% if m.0|length > 10 or m.1|length > 10 %}
+      <span class="label label-{{label}}" data-toggle="tooltip" title="{{ m.0 }} = {{ m.1 }}">
+           ...
+      </span>&nbsp;&nbsp;
+    {% else %}
+       <span class="label label-{{label}}">
+       {{ m.0 }} = {{ m.1 }}
+       </span>&nbsp;&nbsp;
+    {% endif %}
   {% endfor %}

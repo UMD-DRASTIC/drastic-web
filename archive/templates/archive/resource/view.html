@@ -107,8 +107,20 @@
         {% endif %}
         {% for row in resource.metadata %}
         <tr>
-            <th>{{row.0}}</th>
-            <td>{{row.1}}</td>
+          <th>
+            {% if row.0|length > 10 %}
+              <span data-toggle="tooltip" title="{{ row.0 }}">...</span>
+            {% else %}
+              {{ row.0 }}
+            {% endif %}
+          </th>
+          <td>
+            {% if row.1|length > 10 %}
+              <span data-toggle="tooltip" title="{{ row.1 }}">...</span>
+            {% else %}
+              {{ row.1 }}
+            {% endif %}
+          </td>
         </tr>
         {% endfor %}
         </tbody>

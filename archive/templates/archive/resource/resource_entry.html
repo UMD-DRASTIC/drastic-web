@@ -33,10 +33,15 @@
       {% if resource.can_read %}
         <div class="row">
         {% for m in resource.metadata %}
-          <span class="label label-{% if not resource.can_read %}default{% else %}success{% endif %}">
-          {{ m.0 }} = {{ m.1 }}
-          </span>&nbsp;&nbsp;
-      
+          {% if m.0|length > 10 or m.1|length > 10 %}
+            <span class="label label-{% if not resource.can_read %}default{% else %}success{% endif %}" data-toggle="tooltip" title="{{ m.0 }} = {{ m.1 }}">
+                 ...
+            </span>&nbsp;&nbsp;
+          {% else %}
+             <span class="label label-{% if not resource.can_read %}default{% else %}success{% endif %}">
+             {{ m.0 }} = {{ m.1 }}
+             </span>&nbsp;&nbsp;
+          {% endif %}
         {% endfor %}
         </div>
      {% endif %}
