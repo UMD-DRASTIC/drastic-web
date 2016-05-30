@@ -156,11 +156,8 @@ class CDMIResource(object):
         return md
 
     def get_mimetype(self):
-        if self.resource.mimetype:
-            return self.resource.mimetype
-        mimetype = self.resource.get_metadata_key('cdmi_mimetype')
-        if mimetype:
-            return mimetype
+        if self.resource.get_mimetype():
+            return self.resource.get_mimetype()
         # Give best guess at mimetype
         mimetype = mimetypes.guess_type(self.resource.name)
         if mimetype[0]:
