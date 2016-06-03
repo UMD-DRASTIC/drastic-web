@@ -144,7 +144,7 @@ def new_resource(request, parent):
     if not mdata:
         mdata[""] = ""
 
-    read_access, write_access = parent_collection.read_acl()
+    read_access, write_access = parent_collection.get_acl_list()
     initial = {
         'metadata': json.dumps(mdata),
         'read_access': read_access,
@@ -176,9 +176,9 @@ def new_resource(request, parent):
                                            metadata=metadata,
                                            url=url,
                                            mimetype=data['file'].content_type,
-                                           user_uuid=request.user.uuid,
+                                           username=request.user.name,
                                            size=data['file'].size)
-                resource.create_acl(data['read_access'], data['write_access'])
+                resource.create_acl_list(data['read_access'], data['write_access'])
                 messages.add_message(request, messages.INFO,
                                      u"New resource '{}' created" .format(resource.get_name()))
             except ResourceConflictError:
@@ -226,8 +226,8 @@ def edit_resource(request, path):
 
             try:
                 data = form.cleaned_data
-                resource.update(metadata=metadata, user_uuid=request.user.uuid)
-                resource.create_acl(data['read_access'], data['write_access'])
+                resource.update(metadata=metadata, username=request.user.name)
+                resource.create_acl_list(data['read_access'], data['write_access'])
                 
                 return redirect('archive:resource_view', path=resource.path)
             except ResourceConflictError:
@@ -239,7 +239,7 @@ def edit_resource(request, path):
         if not md:
             metadata = '{"":""}'
 
-        read_access, write_access = resource.read_acl()
+        read_access, write_access = resource.get_acl_list()
         initial_data = {'name': resource.name, 'metadata': metadata,
                         'read_access': read_access,
                         'write_access': write_access
@@ -267,7 +267,7 @@ def delete_resource(request, path):
 
     container = Collection.find(resource.container)
     if request.method == "POST":
-        resource.delete(user_uuid=request.user.uuid)
+        resource.delete(username=request.user.name)
         messages.add_message(request, messages.INFO,
                              "The resource '{}' has been deleted".format(resource.name))
         return redirect('archive:view', path=container.path)
@@ -368,7 +368,7 @@ def new_collection(request, parent):
     if not mdata:
         mdata[""] = ""
 
-    read_access, write_access = parent_collection.read_acl()
+    read_access, write_access = parent_collection.get_acl_list()
     initial = {
         'metadata': json.dumps(mdata),
         "read_access": read_access,
@@ -395,8 +395,8 @@ def new_collection(request, parent):
                 collection = Collection.create(name=name,
                                                container=parent,
                                                metadata=metadata,
-                                               user_uuid=request.user.uuid)
-                collection.create_acl(data['read_access'], data['write_access'])
+                                               username=request.user.name)
+                collection.create_acl_list(data['read_access'], data['write_access'])
                 messages.add_message(request, messages.INFO,
                                      u"New collection '{}' created" .format(collection.name))
                 return redirect('archive:view', path=collection.path)
@@ -435,8 +435,8 @@ def edit_collection(request, path):
 
             try:
                 data = form.cleaned_data
-                coll.update(metadata=metadata, user_uuid=request.user.uuid)
-                coll.create_acl(data['read_access'], data['write_access'])
+                coll.update(metadata=metadata, username=request.user.name)
+                coll.create_acl_list(data['read_access'], data['write_access'])
                 return redirect('archive:view', path=coll.path)
             except CollectionConflictError:
                 messages.add_message(request, messages.ERROR,
@@ -446,7 +446,7 @@ def edit_collection(request, path):
         metadata = json.dumps(md)
         if not md:
             metadata = '{"":""}'
-        read_access, write_access = coll.read_acl()
+        read_access, write_access = coll.get_acl_list()
         initial_data = {'name': coll.name,
                         'metadata': metadata,
                         'read_access': read_access,
@@ -474,7 +474,7 @@ def delete_collection(request, path):
         else:
             # Just in case
             parent_path = ''
-        Collection.delete_all(coll.path, user_uuid=request.user.uuid)
+        Collection.delete_all(coll.path, username=request.user.name)
         messages.add_message(request, messages.INFO,
                              u"The collection '{}' has been deleted".format(coll.name))
         return redirect('archive:view', path=parent_path)

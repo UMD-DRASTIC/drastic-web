@@ -29,7 +29,8 @@ from archive.widgets import JsonPairInputs
 
 def get_groups():
     from indigo.models import Group
-    return [(g.uuid,g.name,) for g in Group.objects.all()]
+    return [(u'AUTHENTICATED@', 'authenticated@'),
+            (u'ANONYMOUS@', 'anonymous@')] + [(g.name,g.name,) for g in Group.objects.all()]
 
 class CollectionForm(forms.Form):
     groups = get_groups

@@ -17,7 +17,7 @@
         Are you sure you wish to delete user {{user.name}}?
         </div>
 
-        <form action="{% url 'users:delete_user' uuid=user.name %}" method="POST">
+        <form action="{% url 'users:delete_user' name=user.name %}" method="POST">
             {% csrf_token %}
             <button class="btn btn-lg btn-danger">Delete this user</button>
             <a href="{% url 'users:home' %}" class="btn btn-lg btn-success">Cancel</a>

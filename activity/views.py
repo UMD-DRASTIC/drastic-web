@@ -64,7 +64,7 @@ def home(request):
             else:
                 object_dict = {'name': obj_uuid}
         elif notif['object_type'] == OBJ_USER:
-            object = User.find_by_uuid(obj_uuid)
+            object = User.find(obj_uuid)
             if object:
                 object_dict = object.to_dict()
             else:
@@ -76,7 +76,7 @@ def home(request):
                     name = notif['payload']['pre']['name']
                 object_dict = {'name': name}
         elif notif['object_type'] == OBJ_GROUP:
-            object = Group.find_by_uuid(obj_uuid)
+            object = Group.find(obj_uuid)
             if object:
                 object_dict = object.to_dict()
             else:
@@ -88,11 +88,12 @@ def home(request):
                     name = notif['payload']['pre']['name']
                 object_dict = {'uuid': obj_uuid,
                                'name': name}
-        user = User.find_by_uuid(notif['user_uuid'])
-        if user:
-            user_dict = user.to_dict()
-        else:
-            user_dict = {}
+        user_dict = {}
+        if notif['username']:
+            user = User.find(notif['username'])
+            if user:
+                user_dict = user.to_dict()
+            
 
         variables = {
             'user': user_dict,

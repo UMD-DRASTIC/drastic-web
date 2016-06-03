@@ -17,7 +17,7 @@
         Are you sure you wish to delete group {{group.name}}?
         </div>
 
-        <form action="{% url 'groups:delete_group' uuid=group.uuid %}" method="POST">
+        <form action="{% url 'groups:delete_group' name=group.name %}" method="POST">
             {% csrf_token %}
             <button class="btn btn-lg btn-danger">Delete this group</button>
             <a href="{% url 'groups:home' %}" class="btn btn-lg btn-success">Cancel</a>

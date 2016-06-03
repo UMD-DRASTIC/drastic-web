@@ -7,13 +7,13 @@
             {% gravatar group.name 20 %}
             </td>
             <td>
-              <a href="{% url 'groups:view' uuid=group.uuid %}">
+              <a href="{% url 'groups:view' name=group.name %}">
                 {{ group.name }}
               </a>
             </td>
             {% if user.administrator %}
               <td valign="top" align="left">
-                  <a href="{% url 'groups:delete_group' uuid=group.uuid %}">
+                  <a href="{% url 'groups:delete_group' name=group.name %}">
                   <i class="blue-icon glyphicon glyphicon-remove-circle"></i>
                   </a>
               </td>

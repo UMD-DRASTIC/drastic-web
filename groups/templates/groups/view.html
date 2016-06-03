@@ -19,9 +19,9 @@
         <ul>
         {% for member_name in members %}
             <li>
-              <a href="{% url 'users:view' uuid=member_name %}">{{ member_name }}</a>
+              <a href="{% url 'users:view' name=member_name %}">{{ member_name }}</a>
                 {% if user.administrator %}
-                  <a href="{% url 'groups:rm_user' uuid=group_obj.uuid uname=member_name %}">
+                  <a href="{% url 'groups:rm_user' name=group_obj.name uname=member_name %}">
                     <i class="blue-icon glyphicon glyphicon-remove-circle"></i>
                   </a>
                 {% endif %}
@@ -29,7 +29,7 @@
         {% endfor %}
         {% if user.administrator %}
           <li>
-            <a href="{% url 'groups:add_user' uuid=group_obj.uuid %}">Add user</a>
+            <a href="{% url 'groups:add_user' name=group_obj.name %}">Add user</a>
           </li>
         {% endif %}
         </ul>

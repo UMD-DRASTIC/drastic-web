@@ -46,11 +46,11 @@ from django.conf import settings
 class CassandraAuthentication(BasicAuthentication):
     www_authenticate_realm = 'Indigo'
 
-    def authenticate_credentials(self, userid, password):
+    def authenticate_credentials(self, username, password):
         """
         Authenticate the userid and password against username and password.
         """
-        user = User.find(userid)
+        user = User.find(username)
         if user is None or not user.is_active():
             raise exceptions.AuthenticationFailed(_('User inactive or deleted.'))
         if not user.authenticate(password) and not ldapAuthenticate(userid, password):

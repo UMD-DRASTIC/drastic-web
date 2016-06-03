@@ -7,15 +7,15 @@
             {% gravatar user.email 60 %}
             </td>
             <td valign="top" align="left">
-                <a href="{% url 'users:view' uuid=user.name %}">
+                <a href="{% url 'users:view' name=user.name %}">
                 {{ user.name }}
                 </a>
                 
                 {% if req_user.administrator %}
-                  <a href="{% url 'users:edit_user' uuid=user.name %}" >
+                  <a href="{% url 'users:edit_user' name=user.name %}" >
                   <i class="blue-icon glyphicon glyphicon-pencil"></i>
                   </a>
-                  <a href="{% url 'users:delete_user' uuid=user.name %}">
+                  <a href="{% url 'users:delete_user' name=user.name %}">
                   <i class="blue-icon glyphicon glyphicon-remove-circle"></i>
                   </a>
                  {% endif %}

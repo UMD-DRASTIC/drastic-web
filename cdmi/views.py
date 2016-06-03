@@ -298,14 +298,14 @@ class OctetStreamRenderer(BaseRenderer):
 class CassandraAuthentication(BasicAuthentication):
     www_authenticate_realm = 'Indigo'
 
-    def authenticate_credentials(self, userid, password):
+    def authenticate_credentials(self, username, password):
         """
-        Authenticate the userid and password against username and password.
+        Authenticate the username and password against username and password.
         """
-        user = User.find(userid)
+        user = User.find(username)
         if user is None or not user.is_active():
             raise exceptions.AuthenticationFailed(_('User inactive or deleted.'))
-        if not user.authenticate(password) and not ldapAuthenticate(userid, password):
+        if not user.authenticate(password) and not ldapAuthenticate(username, password):
             raise exceptions.AuthenticationFailed(_('Invalid username/password.'))
         return (user, None)
 
@@ -365,15 +365,7 @@ class CDMIView(APIView):
         the server,
         '' if no match is found or no version provided by the client
         'HTTP' if the cdmi header is not present"""
-        if not self.request.META.has_key("HTTP_X_CDMI_SPECIFICATION_VERSION"):
-            return("HTTP")
-        spec_version_raw = self.request.META.get("HTTP_X_CDMI_SPECIFICATION_VERSION", "")
-        versions_list = [el.strip() for el in spec_version_raw.split(",")]
-        for version in CDMI_SUPPORTED_VERSION:
-            if version in versions_list:
-                return version
-        else:
-            return ""
+        return check_cdmi_version(self.request)
 
 
     @csrf_exempt
@@ -754,7 +746,7 @@ class CDMIView(APIView):
                 # We treat acl metadata in a specific way
                 cdmi_acl = metadata["cdmi_acl"]
                 del metadata["cdmi_acl"]
-                collection.update_cdmi_acl(cdmi_acl)
+                collection.update_acl_cdmi(cdmi_acl)
             collection.update(metadata=metadata)
         return HTTP_204_NO_CONTENT
 

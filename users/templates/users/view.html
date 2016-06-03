@@ -34,7 +34,7 @@
           <ul>
           {% for g in groups %}
             <li>
-              <a href="{% url 'groups:view' uuid=g.uuid %}">{{g.name}}</a>
+              <a href="{% url 'groups:view' name=g.name %}">{{g.name}}</a>
             </li>
           {% endfor %}
           </ul>

@@ -6,7 +6,7 @@
 {% endif %}
 
 {% if action == 'edit' %}
-    {% url 'users:edit_user' uuid=user.name as post_url %}
+    {% url 'users:edit_user' name=user.name as post_url %}
 {% else %}
     {% url 'users:new_user' as post_url %}
 {% endif %}
@@ -15,11 +15,18 @@
     {% csrf_token %}
     
 <!--     {{ form }} -->
-    
-    <div class="form-group {% if form.errors.name %}has-error{% endif %}">
-        <label for="username" class="control-label">Username</label>
-        <input type="text" class="form-control" id="username" name="username" value="{{form.username.value|default:''}}"  title="Enter the user name" placeholder="Name of user">
-    </div>
+
+	{% if action == 'edit' %}
+	    <div class="form-group {% if form.errors.name %}has-error{% endif %}">
+	        <label for="username" class="control-label">Username</label>
+	        <input type="text" class="form-control" id="username" name="username" value="{{form.username.value|default:''}}"  title="Enter the username" placeholder="User name" readonly>
+	    </div>
+	{% else %}
+	    <div class="form-group {% if form.errors.name %}has-error{% endif %}">
+	        <label for="username" class="control-label">Username</label>
+	        <input type="text" class="form-control" id="username" name="username" value="{{form.username.value|default:''}}"  title="Enter the username" placeholder="User name">
+	    </div>
+	{% endif %}
     
     <div class="form-group {% if form.errors.name %}has-error{% endif %}">
         <label for="email" class="control-label">Email</label>

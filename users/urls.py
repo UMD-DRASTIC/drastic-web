@@ -23,10 +23,10 @@ urlpatterns = [
     url(r'^logout$', 'users.views.userlogout', name='auth_logout'),
     
     url(r'^new/user$', 'users.views.new_user', name='new_user'),
-    url(r'^delete/user/(?P<uuid>.*)$', 'users.views.delete_user', name='delete_user'),
-    url(r'^edit/user/(?P<uuid>.*)$', 'users.views.edit_user', name='edit_user'),
+    url(r'^delete/user/(?P<name>.*)$', 'users.views.delete_user', name='delete_user'),
+    url(r'^edit/user/(?P<name>.*)$', 'users.views.edit_user', name='edit_user'),
     
-    url(r'^(?P<uuid>.*)$', 'users.views.user_view', name='view'),
+    url(r'^(?P<name>.*)$', 'users.views.user_view', name='view'),
     
 
 ]
