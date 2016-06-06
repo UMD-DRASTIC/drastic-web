@@ -218,20 +218,7 @@ def delete_user(request, username):
 
 def add_user_group(group, ls_users):
     # Check that all users exists
-    not_added = []
-    added = []
-    already_there = []
-    for username in ls_users:
-        user = User.find(username)
-        if user:
-            if group.uuid not in user.groups:
-                user.groups.append(group.uuid)
-                user.update(groups=user.groups)
-                added.append(username)
-            else:
-                already_there.append(username)
-        else:
-            not_added.append(username)
+    added, not_added, already_there = group.add_users(ls_users)
     msg = []
 
     if added:
@@ -257,20 +244,7 @@ def add_user_group(group, ls_users):
 
 
 def rm_user_group(group, ls_users):
-    not_exist = []
-    removed = []
-    not_there = []
-    for username in ls_users:
-        user = User.find(username)
-        if user:
-            if group.uuid in user.groups:
-                user.groups.remove(group.uuid)
-                user.update(groups=user.groups)
-                removed.append(username)
-            else:
-                not_there.append(username)
-        else:
-            not_exist.append(username)
+    removed, not_there, not_exist = group.rm_users(ls_users)
     msg = []
 
     if removed:

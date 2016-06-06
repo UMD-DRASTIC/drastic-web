@@ -30,14 +30,8 @@ def add_user(request, name):
         form = GroupAddForm(users, request.POST)
         if form.is_valid():
             data = form.cleaned_data
-            added = []
-            for username in data.get('users', []):
-                user = User.find(username)
-                if user:
-                    if name not in user.groups:
-                        user.groups.append(name)
-                        user.update(groups=user.groups)
-                        added.append("'{}'".format(user.name))
+            new_users = data.get('users', [])
+            added, not_added, already_there = group.add_users(new_users)
             if added:
                 msg = "{} has been added to the group '{}'".format(", ".join(added),
                                                                    group.name)
@@ -179,13 +173,15 @@ def rm_user(request, name, uname):
     if not request.user.administrator:
         raise PermissionDenied
     if user and group:
-        if group.name in user.groups:
-            user.groups.remove(group.name)
-            user.update(groups=user.groups)
-            group.update(username=request.user.name)
-            msg = "{} has been removed fromthe group '{}'".format(user.name,
-                                                                   group.name)
-            messages.add_message(request, messages.INFO, msg)
+        removed, not_there, not_exist = group.rm_user(uname)
+        if removed:
+            msg = "'{}' has been removed from the group '{}'".format(uname,
+                                                                   name)
+        elif not_there:
+            msg = "'{}' isn't in the group '{}'".format(uname, name)
+        elif not_exist:
+            msg = "'{}' doesn't exist".format(uname)
+        messages.add_message(request, messages.INFO, msg)
     else:
         raise Http404
     return redirect('groups:view', name=name)
