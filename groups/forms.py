@@ -8,5 +8,5 @@ class GroupAddForm(forms.Form):
  
     def __init__(self, users, *args, **kwargs):
         super(GroupAddForm, self).__init__(*args, **kwargs)
-        self.base_fields['users'] = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple,
+        self.fields['users'] = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple,
                                                          choices=users)
