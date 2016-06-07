@@ -500,10 +500,10 @@ def download(request, path):
     if resource.is_reference:
         r = requests.get(resource.url, stream=True)
         resp = StreamingHttpResponse(streaming_content=r,
-                                     content_type=resource.mimetype)
+                                     content_type=resource.get_mimetype())
     else:
         resp = StreamingHttpResponse(streaming_content=resource.chunk_content(),
-                                     content_type=resource.mimetype)
+                                     content_type=resource.get_mimetype())
     resp['Content-Disposition'] = u'attachment; filename="{}"'.format(resource.name)
 
     return resp
