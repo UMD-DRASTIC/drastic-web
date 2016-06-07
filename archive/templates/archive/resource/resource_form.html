@@ -24,7 +24,7 @@
     {% if action != 'edit' %}
         <div class="well form-group {% if form.errors.file %}has-error{% endif %}">
                 {# We remove the "fakepath" bit because Chrome is odd. See: http://davidwalsh.name/fakepath #}
-                <input type="file" name="file" onchange="$('#name').val(this.value.replace('C:\\fakepath\\', ''))"/>
+                <input type="file" name="file" onchange="if ($('#name').val()=='') {$('#name').val(this.value.replace('C:\\fakepath\\', ''))}"/>
         </div>
     {% endif %}
 
