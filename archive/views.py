@@ -323,7 +323,8 @@ def view_collection(request, path):
 
 def search(request):
     query = request.GET.get('q')
-
+    collection = request.GET.get('collection')
+    
     ctx = {
         "q": query
     }
@@ -331,6 +332,10 @@ def search(request):
     terms = [x.lower() for x in query.split(' ')]
     
     results = SearchIndex.find(terms, request.user)
+    
+    if collection:
+        results = [el for el in results if el['path'].startswith(collection)]
+    
     ctx['results'] = results
     ctx['total'] = len(ctx['results'])
     ctx['highlights'] = terms
