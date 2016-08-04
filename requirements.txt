@@ -6,7 +6,7 @@ django-flat-theme==0.9.3
 djangorestframework==3.1.2
 django-bootstrap3==5.4.0
 blist==1.3.6
-cassandra-driver==3.2.2
+cassandra-driver==3.4
 django-gravatar2==1.3.0
 -e git://github.com/livenson/libcdmi-python.git#egg=libcdmi.egg
 requests==2.7
