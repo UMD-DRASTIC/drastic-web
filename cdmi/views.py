@@ -751,7 +751,7 @@ class CDMIView(APIView):
         return HTTP_204_NO_CONTENT
 
 
-    def create_data_object(self, raw_data):
+    def create_data_object(self, raw_data, metadata=None, create_ts=None, acl=None):
         if settings.COMPRESS_UPLOADS:
             # Compress the raw_data and store that instead
             f = StringIO()
@@ -762,7 +762,9 @@ class CDMIView(APIView):
             f.close()
         else:
             data = raw_data
-        data_object = DataObject.create(data, settings.COMPRESS_UPLOADS)
+        data_object = DataObject.create(data, settings.COMPRESS_UPLOADS,
+                                        metadata=metadata,create_ts=create_ts,
+                                        acl=acl)
         return data_object.uuid
 
 
@@ -828,12 +830,19 @@ class CDMIView(APIView):
         if resource:
             # Update value
             # Delete old blobs
+            old_meta = resource.get_metadata()
+            old_acl = resource.get_acl()
+            create_ts = resource.get_create_ts()
+            
             resource.delete_blobs()
             uuid = None
             seq_num = 0
             for chk in chunkstring(content, CHUNK_SIZE):
                 if uuid is None:
-                    uuid = self.create_data_object(chk)
+                    uuid = self.create_data_object(chk,
+                                                   metadata=old_meta,
+                                                   acl=old_acl,
+                                                   create_ts=create_ts)
                 else:
                     self.append_data_object(uuid, seq_num, chk)
                 seq_num += 1
@@ -932,7 +941,7 @@ class CDMIView(APIView):
             # We treat acl metadata in a specific way
             cdmi_acl = metadata_body["cdmi_acl"]
             del metadata_body["cdmi_acl"]
-            resource.update_cdmi_acl(cdmi_acl)
+            resource.update_acl_cdmi(cdmi_acl)
         metadata.update(metadata_body)
         resource.update(metadata=metadata)
 
