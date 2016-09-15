@@ -11,7 +11,7 @@ from groups.forms import (
     GroupForm,
     GroupAddForm
 )
-from indigo.models import (
+from drastic.models import (
     Group,
     User
 )

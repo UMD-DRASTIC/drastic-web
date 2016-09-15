@@ -1,10 +1,10 @@
 
 Hello {{ user.name }},
 
-You have recently created an account on Indigo, to activate your account, please click the link below:
+You have recently created an account on Drastic, to activate your account, please click the link below:
 
 <a href="http://{{site.domain}}{% url 'registration_activate' activation_key=activation_key %}">http://{{site.domain}}{% url 'registration_activate' activation_key=activation_key %}</a>
 
 Regards
 
-The Indigo Team
+The Drastic Team

@@ -1,19 +1,8 @@
-"""Django settings for Indigo project.
-
-Copyright 2015 Archive Analytics Solutions
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+"""Django settings for Drastic project.
 """
+__copyright__ = "Copyright (C) 2016 University of Maryland"
+__license__ = "GNU AFFERO GENERAL PUBLIC LICENSE, Version 3"
+
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
@@ -50,7 +39,7 @@ INSTALLED_APPS = (
     'django_gravatar',
 
 
-    'indigo_ui',
+    'drastic_ui',
     'archive',
     'activity',
     'nodes',
@@ -61,7 +50,7 @@ INSTALLED_APPS = (
     'admin'
 )
 
-DEFAULT_APP_CONFIG = 'indigo_ui.IndigoAppConfig'
+DEFAULT_APP_CONFIG = 'drastic_ui.DrasticAppConfig'
 
 SITE_ID = 1
 
@@ -80,7 +69,7 @@ MIDDLEWARE_CLASSES = (
     'cdmi.middleware.CDMIMiddleware'
 )
 
-ROOT_URLCONF = 'indigo_ui.urls'
+ROOT_URLCONF = 'drastic_ui.urls'
 
 TEMPLATES = [
     {
@@ -108,7 +97,7 @@ ADMIN_SERVER = {
     "endpoint": "http://127.0.0.1/api/admin",
 }
 
-WSGI_APPLICATION = 'indigo_ui.wsgi.application'
+WSGI_APPLICATION = 'drastic_ui.wsgi.application'
 
 DATABASES = {
 #     'test': {
@@ -179,7 +168,7 @@ LOGGING = {
         },
     },
     'loggers': {
-        'indigo': {
+        'drastic': {
             'handlers': ['console'],
             'level': os.getenv('DJANGO_LOG_LEVEL', 'DEBUG'),
         },

@@ -3,7 +3,7 @@ from django.core.cache import cache
 class CassandraAuth(object):
 
     def process_request(self, request):
-        from indigo.models import User
+        from drastic.models import User
 
         username = request.session.get('user')
         if not username:

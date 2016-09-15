@@ -1,25 +1,14 @@
 """Archive Forms
 
-Copyright 2015 Archive Analytics Solutions
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
 """
+__copyright__ = "Copyright (C) 2016 University of Maryland"
+__license__ = "GNU AFFERO GENERAL PUBLIC LICENSE, Version 3"
 
 
 from django import forms
 import json
 
-from indigo.metadata import (
+from drastic.metadata import (
     get_collection_validator,
     get_resource_validator
 )
@@ -28,7 +17,7 @@ from archive.widgets import JsonPairInputs
 
 
 def get_groups():
-    from indigo.models import Group
+    from drastic.models import Group
     return [(u'AUTHENTICATED@', 'authenticated@'),
             (u'ANONYMOUS@', 'anonymous@')] + [(g.name,g.name,) for g in Group.objects.all()]
 

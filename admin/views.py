@@ -1,19 +1,9 @@
 """"Admin views
 
-Copyright 2015 Archive Analytics Solutions
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
 """
+__copyright__ = "Copyright (C) 2016 University of Maryland"
+__license__ = "GNU AFFERO GENERAL PUBLIC LICENSE, Version 3"
+
 
 from rest_framework.decorators import (
     api_view,
@@ -39,12 +29,12 @@ from rest_framework.status import (
 )
 import ldap
 
-from indigo.models.group import Group
-from indigo.models.user import User
+from drastic.models.group import Group
+from drastic.models.user import User
 from django.conf import settings
 
 class CassandraAuthentication(BasicAuthentication):
-    www_authenticate_realm = 'Indigo'
+    www_authenticate_realm = 'Drastic'
 
     def authenticate_credentials(self, username, password):
         """

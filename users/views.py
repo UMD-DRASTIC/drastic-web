@@ -6,7 +6,7 @@ from django.http import Http404
 from django.contrib import messages
 from django.conf import settings
 
-from indigo.models import (
+from drastic.models import (
     Group,
     User
 )

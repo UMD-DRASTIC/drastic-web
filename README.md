@@ -1,25 +1,25 @@
-# Indigo
+# Drastic
 
-Indigo is a data management solution written in Python that allows users to upload and archive data resources.  Data is managed in a Cassandra database, and the associated Indigo Agent is responsible for post-processing on uploaded content.
+Drastic is a data management solution written in Python that allows users to upload and archive data resources.  Data is managed in a Cassandra database, and the associated Drastic Agent is responsible for post-processing on uploaded content.
 
-The primary interface to Indigo is the Django application in this repository.
+The primary interface to Drastic is the Django application in this repository.
 
 
 ## Installing
 
-Indigo deployment is automated using Ansible. Ensure
+Drastic deployment is automated using Ansible. Ensure
 your `/etc/ansible/hosts` file contains the following:
 
 ```ini
-[indigo-databases]
+[drastic-databases]
 127.0.0.1
 
-[indigo-webservers]
+[drastic-webservers]
 127.0.0.1
 
-[indigo:children]
-indigo-databases
-indigo-webservers
+[drastic:children]
+drastic-databases
+drastic-webservers
 ```
 
 Replace 127.0.0.1 with the address of the server(s) you want to deploy on.
@@ -32,8 +32,8 @@ To install just the web server component, run:
 
 `ansible-playbook webservers.yml`
 
-The Indigo web server role comes with some sensible defaults for deploying to a machine, but
-if you feel the need to tweak something you can change a few things in `roles/indigo-web/vars` or
+The Drastic web server role comes with some sensible defaults for deploying to a machine, but
+if you feel the need to tweak something you can change a few things in `roles/drastic-web/vars` or
 better still use the command line:
 
 `ansible-playbook webservers.yml --extra-vars default_user_name=joey_bloggs default_password=supersecret`
@@ -42,7 +42,7 @@ See [the Ansible documentation](http://docs.ansible.com/ansible/) for more infor
 
 ## Enabling LDAP Authentication
 
-Authentication is currently handled in users/views.py, taking server and DN pattern from indigo_ui/settings.py. In order to enable LDAP authentication via a simple bind, you must supply to environment variables to the indigo web process (via indigo-web.conf usually). This
+Authentication is currently handled in users/views.py, taking server and DN pattern from drastic_ui/settings.py. In order to enable LDAP authentication via a simple bind, you must supply to environment variables to the drastic web process (via drastic-web.conf usually). This
 may also be configured via ansible host variables.
 
 Environment variables:
@@ -53,7 +53,7 @@ Ansible group variables:
 * LDAP_SERVER_URI (same as above)
 * LDAP_USER_DN_TEMPLATE (same as above)
 
-If provisioning with Ansible, these LDAP settings will be included in indigo-web.conf and passed to the python process.
+If provisioning with Ansible, these LDAP settings will be included in drastic-web.conf and passed to the python process.
 
 ## Customising the schema
 
@@ -68,6 +68,6 @@ Each direction must have at least two keys (name and required) and optionally a 
 | choices | no | A list of valid options, if present the user *must* enter one of these values (or empty if required=false)| ["a", "b", "c""] |
 
 
-## The Indigo CLI
+## The Drastic CLI
 
-Management of an Indigo instance is done via the `indigo` command line interface, which is available from inside the previously created virtualenv.   See <https://bitbucket.org/archivea/indigo> for more information on running the commands.
+Management of an Drastic instance is done via the `drastic` command line interface, which is available from inside the previously created virtualenv.   See <https://github.com/UMD-DRASTIC/drastic> for more information on running the commands.

@@ -1,30 +1,20 @@
 """"CDMI Models
 
-Copyright 2015 Archive Analytics Solutions
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
 """
+__copyright__ = "Copyright (C) 2016 University of Maryland"
+__license__ = "GNU AFFERO GENERAL PUBLIC LICENSE, Version 3"
+
 
 import mimetypes
 from collections import OrderedDict
 
-from indigo.models.collection import Collection
+from drastic.models.collection import Collection
 
 class CDMIContainer(object):
-    """Wrapper to return CDMI fields fro an Indigo Collection"""
+    """Wrapper to return CDMI fields fro an Drastic Collection"""
 
-    def __init__(self, indigo_container, api_root):
-        self.collection = indigo_container
+    def __init__(self, drastic_container, api_root):
+        self.collection = drastic_container
         self.api_root = api_root
 
     def get_capabilitiesURI(self):
@@ -66,7 +56,7 @@ class CDMIContainer(object):
 
     def get_domainURI(self):
         """Mandatory URI of the owning domain"""
-        return ('{0}/cdmi_domains/indigo/'.format(self.api_root))
+        return ('{0}/cdmi_domains/drastic/'.format(self.api_root))
 
     def get_metadata(self):
         md = self.collection.get_cdmi_metadata()
@@ -120,10 +110,10 @@ class CDMIContainer(object):
 
 
 class CDMIResource(object):
-    """Wrapper to return CDMI fields fro an Indigo Resource"""
+    """Wrapper to return CDMI fields fro an Drastic Resource"""
 
-    def __init__(self, indigo_resource, api_root):
-        self.resource = indigo_resource
+    def __init__(self, drastic_resource, api_root):
+        self.resource = drastic_resource
         self.api_root = api_root
 
     def chunk_content(self):
@@ -145,7 +135,7 @@ class CDMIResource(object):
 
     def get_domainURI(self):
         """Mandatory URI of the owning domain"""
-        return ('{0}/cdmi_domains/indigo/'.format(self.api_root))
+        return ('{0}/cdmi_domains/drastic/'.format(self.api_root))
 
     def get_length(self):
         return self.resource.size
