@@ -13,10 +13,10 @@ class DrasticAppConfig(AppConfig):
     verbose_name = "Drastic"
 
     def ready(self):
-        from drastic.models import initialise, Collection
+        from drastic.models import connect, Collection
 
         cfg = get_config(None)
-        initialise(keyspace=cfg.get('KEYSPACE', 'drastic'),
+        connect(keyspace=cfg.get('KEYSPACE', 'drastic'),
                    hosts=cfg.get('CASSANDRA_HOSTS', ('127.0.0.1', )))
 
         root = Collection.find("/")
@@ -25,4 +25,3 @@ class DrasticAppConfig(AppConfig):
             Collection.create_root()
         else:
             print "Using existing root collection"
-
