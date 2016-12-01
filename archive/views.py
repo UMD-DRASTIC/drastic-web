@@ -8,6 +8,7 @@ __license__ = "GNU AFFERO GENERAL PUBLIC LICENSE, Version 3"
 import collections
 import json
 import requests
+import urllib
 import os
 from django.http import (
     StreamingHttpResponse,
@@ -60,8 +61,8 @@ def notify_agent(resource_id, event=""):
     from nodes.client import choose_client
     client = choose_client()
     client.notify(resource_id, event)
-    
-    
+
+
 # TODO: Move this to a helper
 def get_extension(name):
     _, ext = os.path.splitext(name)
@@ -103,12 +104,14 @@ def view_resource(request, path):
     for p in container.path.split('/'):
         if not p:
             continue
-        full = u"{}/{}".format(full, p)
+        quoted = urllib.quote_plus(p)
+        full = u"{}/{}".format(full, quoted)
         paths.append((p, full))
 
     ctx = {
         "resource": resource.full_dict(request.user),
         "container": container,
+        "resource_path_quoted": urllib.quote_plus(resource.path),
         "container_path": container.path,
         "collection_paths": paths
     }
@@ -217,7 +220,7 @@ def edit_resource(request, path):
                 data = form.cleaned_data
                 resource.update(metadata=metadata, username=request.user.name)
                 resource.create_acl_list(data['read_access'], data['write_access'])
-                
+
                 return redirect('archive:resource_view', path=resource.path)
             except ResourceConflictError:
                 messages.add_message(request, messages.ERROR,
@@ -313,18 +316,18 @@ def view_collection(request, path):
 def search(request):
     query = request.GET.get('q')
     collection = request.GET.get('collection')
-    
+
     ctx = {
         "q": query
     }
 
     terms = [x.lower() for x in query.split(' ')]
-    
+
     results = SearchIndex.find(terms, request.user)
-    
+
     if collection:
         results = [el for el in results if el['path'].startswith(collection)]
-    
+
     ctx['results'] = results
     ctx['total'] = len(ctx['results'])
     ctx['highlights'] = terms

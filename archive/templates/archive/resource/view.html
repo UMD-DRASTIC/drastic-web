@@ -5,7 +5,7 @@
 {% block main_content %}
 
 <h2>Item - {{resource.name}}
-        <a class="btn btn-success pull-right" href="{% url 'archive:download' path=resource.path %}">Download file</a>
+        <a class="btn btn-success pull-right" href="{% url 'archive:download' path=resource_path_quoted %}">Download file</a>
 
 </h2>
 <hr/>
@@ -27,10 +27,10 @@
 
     <div class="control-bar">
         {% if resource.can_edit %}
-        <a class="btn btn-info" href='{% url "archive:edit_resource" path=resource.path %}'%}>Edit Item</a>
+        <a class="btn btn-info" href='{% url "archive:edit_resource" path=resource_path_quoted %}'%}>Edit Item</a>
         {% endif %}
         {% if resource.can_delete %}
-        <a class="btn btn-danger" href='{% url "archive:delete_resource" path=resource.path %}'>Delete Item</a>
+        <a class="btn btn-danger" href='{% url "archive:delete_resource" path=resource_path_quoted %}'>Delete Item</a>
         {% endif %}
 
         <div class="clearfix"></div>
@@ -43,7 +43,7 @@
 <div class="col-md-6">
     <h4>Preview</h4>
     <hr/>
-    <iframe src="{% url 'archive:preview' path=resource.path%}" style="width:420px; height: 560px; border: none;" >
+    <iframe src="{% url 'archive:preview' path=resource_path_quoted %}" style="width:420px; height: 560px; border: none;" >
     </iframe>
 </div>
 
@@ -85,8 +85,8 @@
         {% endif %}
         <tr>
             <th>CDMI URL:</th>
-            <td><a href='{% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}/api/cdmi{{resource.path}}'>
-              {% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}/api/cdmi{{resource.path}}
+            <td><a href='{% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}/api/cdmi{{resource_path_quoted}}'>
+              {% if request.is_secure %}https://{% else %}http://{% endif %}{{ request.get_host }}/api/cdmi{{resource_path_quoted}}
                </a></td>
         </tr>
         {% if resource.is_reference %}
@@ -95,7 +95,7 @@
                 <td><a href="{{resource.url}}">{{resource.url}}</a></td>
             </tr>
         {% endif %}
-        
+
        {% if request.user.administrator and not resource.is_reference %}
         <tr>
             <th>Internal URL</th>
@@ -129,5 +129,3 @@
 
 
 {% endblock main_content %}
-
-
