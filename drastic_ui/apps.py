@@ -19,8 +19,8 @@ class DrasticAppConfig(AppConfig):
         connect(keyspace=cfg.get('KEYSPACE', 'drastic'),
                    hosts=cfg.get('CASSANDRA_HOSTS', ('127.0.0.1', )))
 
-        root = Collection.find("/")
-        if not root:
+        #  root = Collection.find("/")
+        if False:  # not root:
             print "Creating root collection"
             Collection.create_root()
         else:

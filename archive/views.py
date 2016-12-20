@@ -8,6 +8,7 @@ __license__ = "GNU AFFERO GENERAL PUBLIC LICENSE, Version 3"
 import collections
 import json
 import requests
+import logging
 from urllib import quote
 import os
 from django.http import (
@@ -298,9 +299,11 @@ def view_collection(request, path):
         full = u"{}/{}".format(full, p)
         paths.append((p, full))
 
+    logging.error("Starting query for children..")
     children_c, children_r = collection.get_child_objects()
-    children_c.sort(key=lambda x: x.name.lower())
-    children_r.sort(key=lambda x: x.get_name().lower())
+    logging.error("Got {0} collections and {1} resources.".format(len(children_c), len(children_r)))
+    # children_c.sort(key=lambda x: x.name.lower())
+    # children_r.sort(key=lambda x: x.get_name().lower())
     ctx = {
         'collection': collection.to_dict(request.user),
         'children_c': [c.to_dict(request.user) for c in children_c],
@@ -308,6 +311,7 @@ def view_collection(request, path):
         'collection_paths': paths,
         'empty': len(children_c) + len(children_r) == 0,
     }
+    logging.error("Done building context for template: \n{0}".format(json.dumps(ctx)))
 
     return render(request, 'archive/index.html', ctx)
 
