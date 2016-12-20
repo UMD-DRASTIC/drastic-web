@@ -8,7 +8,7 @@ __license__ = "GNU AFFERO GENERAL PUBLIC LICENSE, Version 3"
 import collections
 import json
 import requests
-import urllib
+from urllib import quote
 import os
 from django.http import (
     StreamingHttpResponse,
@@ -104,14 +104,13 @@ def view_resource(request, path):
     for p in container.path.split('/'):
         if not p:
             continue
-        quoted = urllib.quote_plus(p)
-        full = u"{}/{}".format(full, quoted)
+        # quoted = quote(p, safe="/ ")
+        full = u"{}/{}".format(full, p)
         paths.append((p, full))
 
     ctx = {
         "resource": resource.full_dict(request.user),
         "container": container,
-        "resource_path_quoted": urllib.quote_plus(resource.path),
         "container_path": container.path,
         "collection_paths": paths
     }
@@ -299,13 +298,13 @@ def view_collection(request, path):
         full = u"{}/{}".format(full, p)
         paths.append((p, full))
 
-    children_c, children_r = collection.get_child()
-    children_c.sort(key=lambda x: x.lower())
-    children_r.sort(key=lambda x: x.lower())
+    children_c, children_r = collection.get_child_objects()
+    children_c.sort(key=lambda x: x.name.lower())
+    children_r.sort(key=lambda x: x.get_name().lower())
     ctx = {
         'collection': collection.to_dict(request.user),
-        'children_c': [Collection.find(merge(path,c)).to_dict(request.user) for c in children_c],
-        'children_r': [Resource.find(merge(path,c)).simple_dict(request.user) for c in children_r],
+        'children_c': [c.to_dict(request.user) for c in children_c],
+        'children_r': [c.simple_dict(request.user) for c in children_r],
         'collection_paths': paths,
         'empty': len(children_c) + len(children_r) == 0,
     }
