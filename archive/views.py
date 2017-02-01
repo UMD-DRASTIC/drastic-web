@@ -311,7 +311,7 @@ def view_collection(request, path):
         'collection_paths': paths,
         'empty': len(children_c) + len(children_r) == 0,
     }
-    logging.error("Done building context for template: \n{0}".format(json.dumps(ctx)))
+    logging.error("Done building context for template.")
 
     return render(request, 'archive/index.html', ctx)
 
