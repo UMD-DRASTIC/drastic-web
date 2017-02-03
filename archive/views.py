@@ -300,14 +300,14 @@ def view_collection(request, path):
         paths.append((p, full))
 
     logging.error("Starting query for children..")
-    children_c, children_r = collection.get_child_objects()
+    children_c, children_r = collection.get_child()
     logging.error("Got {0} collections and {1} resources.".format(len(children_c), len(children_r)))
-    # children_c.sort(key=lambda x: x.name.lower())
-    # children_r.sort(key=lambda x: x.get_name().lower())
+    # children_c.sort(key=lambda x: x.lower())
+    # children_r.sort(key=lambda x: x.lower())
     ctx = {
         'collection': collection.to_dict(request.user),
-        'children_c': [c.to_dict(request.user) for c in children_c],
-        'children_r': [c.simple_dict(request.user) for c in children_r],
+        'children_c': [Collection.find(merge(path, c)).to_dict(request.user) for c in children_c],
+        'children_r': [Resource.find(merge(path, c)).simple_dict(request.user) for c in children_r],
         'collection_paths': paths,
         'empty': len(children_c) + len(children_r) == 0,
     }
