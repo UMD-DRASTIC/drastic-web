@@ -162,22 +162,30 @@ LOGGING = {
         },
         'file': {
             'level': 'DEBUG',
-            'class': 'logging.FileHandler',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'maxBytes': 1024*1024*5,  # 5 MB
+            'backupCount': 5,
             'filename': os.path.join(BASE_DIR, '../../log/debug.log'),
             'formatter': 'verbose',
         },
     },
     'loggers': {
-        'drastic': {
-            'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'DEBUG'),
+        '': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True
         },
         'django': {
             'handlers': ['file'],
-            'level': 'DEBUG',
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'DEBUG'),
         },
+        'cassandra': {
+            'handlers': ['file'],
+            'level': 'WARN',
+        }
     },
 }
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
