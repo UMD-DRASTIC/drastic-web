@@ -24,3 +24,4 @@ gunicorn==19.3.0
 crcmod==1.7
 paho-mqtt==1.1
 python-ldap==2.4.22
+gremlinpython
