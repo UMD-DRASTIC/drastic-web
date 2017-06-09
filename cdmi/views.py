@@ -559,7 +559,7 @@ class CDMIView(APIView):
         if not http_accepts.intersection(set(['application/cdmi-object', '*/*'])):
             self.logger.error(u"Accept header problem for resource '{}' ('{}')".format(path, http_accepts))
             return Response(status=HTTP_406_NOT_ACCEPTABLE)
-        
+
         if cdmi_resource.is_reference():
             field_dict = FIELDS_REFERENCE
             status = HTTP_302_FOUND
@@ -823,7 +823,7 @@ class CDMIView(APIView):
             old_meta = resource.get_metadata()
             old_acl = resource.get_acl()
             create_ts = resource.get_create_ts()
-            
+
             resource.delete_blobs()
             uuid = None
             seq_num = 0
@@ -837,7 +837,7 @@ class CDMIView(APIView):
                     self.append_data_object(uuid, seq_num, chk)
                 seq_num += 1
             url = "cassandra://{}".format(uuid)
-            
+
             resource.update(url=url,
                             mimetype=mimetype)
             return Response(status=HTTP_204_NO_CONTENT)
@@ -860,7 +860,7 @@ class CDMIView(APIView):
             # but omitting the trailing slash at the end of the URI
             # CDMI standards mandates 400 Bad Request response
             return Response(status=HTTP_400_BAD_REQUEST)
-         # Sent as CDMI JSON
+        # Sent as CDMI JSON
         body = self.request.body
         request_body = json.loads(body)
         try:

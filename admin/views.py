@@ -1,10 +1,6 @@
 """"Admin views
 
 """
-__copyright__ = "Copyright (C) 2016 University of Maryland"
-__license__ = "GNU AFFERO GENERAL PUBLIC LICENSE, Version 3"
-
-
 from rest_framework.decorators import (
     api_view,
     authentication_classes,
@@ -33,6 +29,10 @@ from drastic.models.group import Group
 from drastic.models.user import User
 from django.conf import settings
 
+__copyright__ = "Copyright (C) 2016 University of Maryland"
+__license__ = "GNU AFFERO GENERAL PUBLIC LICENSE, Version 3"
+
+
 class CassandraAuthentication(BasicAuthentication):
     www_authenticate_realm = 'Drastic'
 
@@ -43,9 +43,10 @@ class CassandraAuthentication(BasicAuthentication):
         user = User.find(username)
         if user is None or not user.is_active():
             raise exceptions.AuthenticationFailed(_('User inactive or deleted.'))
-        if not user.authenticate(password) and not ldapAuthenticate(userid, password):
+        if not user.authenticate(password) and not ldapAuthenticate(username, password):
             raise exceptions.AuthenticationFailed(_('Invalid username/password.'))
         return (user, None)
+
 
 def ldapAuthenticate(username, password):
     if settings.AUTH_LDAP_SERVER_URI is None:
