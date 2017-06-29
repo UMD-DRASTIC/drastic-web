@@ -11,7 +11,7 @@ from collections import OrderedDict
 from drastic.models.collection import Collection
 
 class CDMIContainer(object):
-    """Wrapper to return CDMI fields fro an Drastic Collection"""
+    """Wrapper to return CDMI fields from a Drastic Collection"""
 
     def __init__(self, drastic_container, api_root):
         self.collection = drastic_container
@@ -102,7 +102,7 @@ class CDMIContainer(object):
         """Optional - Indicate the percentage of completion as a numeric
         integer value from 0 through 100. 100 if the completionStatus is
         'Complete'"""
-        
+
         val = self.collection.get_metadata_key("cdmi_percentComplete")
         if not val:
             val = "100"
@@ -192,7 +192,7 @@ class CDMIResource(object):
         """Optional - Indicate the percentage of completion as a numeric
         integer value from 0 through 100. 100 if the completionStatus is
         'Complete'"""
-        
+
         val = self.resource.get_metadata_key("cdmi_percentComplete")
         if not val:
             val = "100"

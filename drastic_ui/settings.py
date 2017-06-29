@@ -46,6 +46,7 @@ INSTALLED_APPS = (
     'users',
     'groups',
     #'s3',
+    'webdav',
     'cdmi',
     'admin'
 )

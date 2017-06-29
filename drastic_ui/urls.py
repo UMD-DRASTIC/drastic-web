@@ -1,14 +1,15 @@
 """"Drastic UI URLs
 """
-__copyright__ = "Copyright (C) 2016 University of Maryland"
-__license__ = "GNU AFFERO GENERAL PUBLIC LICENSE, Version 3"
-
 
 from django.conf import settings
 from django.conf.urls import include, url
 from django.views.generic import TemplateView
 
 from django.conf.urls.static import static
+
+
+__copyright__ = "Copyright (C) 2016 University of Maryland"
+__license__ = "GNU AFFERO GENERAL PUBLIC LICENSE, Version 3"
 
 urlpatterns = [
     url(r'^$', 'drastic_ui.views.home', name='home'),
@@ -25,6 +26,6 @@ urlpatterns = [
     # nginx to re-route calls as an internal redirect
     url(r'^api/cdmi/', include('cdmi.urls', namespace="cdmi")),
     url(r'^api/admin/', include('admin.urls', namespace="admin")),
+    url(r'^api/webdav/', include('webdav.urls', namespace="webdav")),
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-
