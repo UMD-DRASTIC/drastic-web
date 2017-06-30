@@ -61,6 +61,20 @@ class DrasticDavResource(BaseFSDavResource):
         return self.me().get_modified_ts()
 
     @property
+    def is_root(self):
+        if self.path is None or len(self.path) == 0:
+            return True
+        else:
+            return False
+
+    @property
+    def displayname(self):
+        if self.is_root:
+            return '/'
+        else:
+            return super(DrasticDavResource, self).displayname
+
+    @property
     def is_collection(self):
         """Return True if this resource is a directory (collection in WebDAV parlance)."""
         return isinstance(self.me(), Collection)
@@ -161,12 +175,12 @@ class DrasticDavResource(BaseFSDavResource):
     def create_collection(self):
         """Create a directory in the location of this resource."""
         # TODO needs checks from CDMIView
-        path = None
-        if self.get_parent_path() == '':
-            path = '/'
+        container = None
+        if self.get_parent_path() == '' or self.get_parent_path() == '/':
+            container = '/'
         else:
-            path = self.get_parent_path()
-        Collection.create(name=self.displayname, container=path)
+            container = self.get_parent_path()[:-1]
+        Collection.create(name=self.displayname, container=container)
 
     def copy_object(self, destination, depth=0):
         raise NotImplementedError
