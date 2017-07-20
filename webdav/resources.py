@@ -50,7 +50,10 @@ class DrasticDavResource(BaseFSDavResource):
     @property
     def getcontentlength(self):
         """Return the size of the resource in bytes."""
-        return self.me().get_size()
+        if self.is_collection:
+            return 0
+        else:
+            return self.me().get_size()
 
     def get_created(self):
         """Return the create time as datetime object."""
