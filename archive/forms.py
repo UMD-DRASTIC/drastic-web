@@ -86,4 +86,4 @@ class ResourceForm(forms.Form):
 
 class ResourceNewForm(ResourceForm):
     name = forms.CharField(label='Item name', max_length=100, required=True)
-    file = forms.FileField(required=True)
+    file = forms.FileField(required=True, allow_empty_file=True)

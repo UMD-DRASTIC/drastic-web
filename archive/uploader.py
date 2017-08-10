@@ -50,12 +50,12 @@ class AgentUploader(FileUploadHandler):
             z = zipfile.ZipFile(f, "w", zipfile.ZIP_DEFLATED)
             z.writestr("data", raw_data)
             z.close()
- 
+
             data = f.getvalue()
             f.close()
         else:
             data = raw_data
-        
+
         if not self.uuid:
             data_object = DataObject.create(data, settings.COMPRESS_UPLOADS)
             self.uuid = data_object.uuid
@@ -76,6 +76,11 @@ class AgentUploader(FileUploadHandler):
         """
         print u"File upload complete with {} bytes".format(file_size)
 
+        if file_size == 0:  # Create empty blob DataObject for zero-length files
+            if not self.uuid:
+                data_object = DataObject.create(None, settings.COMPRESS_UPLOADS)
+                self.uuid = data_object.uuid
+
         uploaded = CassandraUploadedFile(name=self.file_name,
                                          content=str(self.uuid),
                                          content_type=self.content_type,
@@ -92,4 +97,3 @@ class CassandraUploadedFile(InMemoryUploadedFile):
     def __init__(self, name, content, content_type, length):
         super(CassandraUploadedFile, self).__init__(BytesIO(content), None, name,
                                                  content_type, length, None, None)
-
