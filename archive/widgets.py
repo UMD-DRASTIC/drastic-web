@@ -3,7 +3,8 @@
 A widget for showing/retrieving key value pairs from a
 form.
 
-Source: http://www.huyng.com/posts/django-custom-form-widget-for-dictionary-and-tuple-key-value-pairs/
+Source:
+    http://www.huyng.com/posts/django-custom-form-widget-for-dictionary-and-tuple-key-value-pairs/
 
 
 """
@@ -54,45 +55,51 @@ class JsonPairInputs(Widget):
         value (str)  -- a json string of a two-tuple list automatically passed in by django
         attrs (dict) -- automatically passed in by django (unused in this function)
         """
-
-        if (not value) or value.strip() is '': value = '{"":""}'
+        import logging
+        logging.debug('json form field: {0} {1}'.format(name, str(value)))
+        #  metadata {"foo": ["bar", "barr"]}
+        if (not value) or value.strip() is '':
+            value = '{"":""}'
         twotuple = json.loads(force_unicode(value))
 
         if isinstance(twotuple, dict):
-            twotuple = [(k,v,) for k,v in twotuple.iteritems()]
+            twotuple = [(k, v,) for k, v in twotuple.iteritems()]
         if not twotuple:
-            twotuple = [("","")]
+            twotuple = [("", "")]
 
         ret = ''
         if value and len(value) > 0:
-            for k, v in twotuple:
-                ctx = {'key':k,
-                       'value':v,
-                       'fieldname':name,
-                       'key_attrs': flatatt(self.key_attrs),
-                       'val_attrs': flatatt(self.val_attrs) }
-                ret += """
-                    <div class="form-group" id="">
-                        <div class="col-md-4">
-                            <input placeholder="Key" class="form-control" type="text" name="json_key[%(fieldname)s]" value="%(key)s" %(key_attrs)s>
-                        </div>
-                        <div class="col-md-1" style="font-size: 2em; text-align: center;">
-                        =
-                        </div>
-                        <div class="col-md-5">
-                            <input placeholder="Value"  class="form-control" type="text" name="json_value[%(fieldname)s]" value="%(value)s" %(val_attrs)s>
-                        </div>
-                        <div class="col-md-2 btn-group" role="group" aria-label="...">
-                            <a class="btn btn-large btn-success">
-                                <i class="glyphicon glyphicon-plus"></i>
-                            </a>
-                            <a class="btn btn-large btn-danger">
-                                <i class="glyphicon glyphicon-minus"></i>
-                            </a>
-                        </div>
-                        <div class="clearfix"></div>
-                    </div>
-                    """ % ctx
+            for k, values in twotuple:
+                ret += """<div class="form-group" id="">"""
+                if not isinstance(values, list):
+                    values = [values]
+                for v in values:
+                    ctx = {'key': k,
+                           'value': v,
+                           'fieldname': name,
+                           'key_attrs': flatatt(self.key_attrs),
+                           'val_attrs': flatatt(self.val_attrs)}
+                    ret += """
+                            <div class="col-md-4">
+                                <input placeholder="Key" class="form-control" type="text" name="json_key[%(fieldname)s]" value="%(key)s" %(key_attrs)s>
+                            </div>
+                            <div class="col-md-1" style="font-size: 2em; text-align: center;">
+                            =
+                            </div>
+                            <div class="col-md-5">
+                                <input placeholder="Value"  class="form-control" type="text" name="json_value[%(fieldname)s]" value="%(value)s" %(val_attrs)s>
+                            </div>
+                            <div class="col-md-2 btn-group" role="group" aria-label="...">
+                                <a class="btn btn-large btn-success">
+                                    <i class="glyphicon glyphicon-plus"></i>
+                                </a>
+                                <a class="btn btn-large btn-danger">
+                                    <i class="glyphicon glyphicon-minus"></i>
+                                </a>
+                            </div>
+                            <div class="clearfix"></div>
+                            """ % ctx
+                ret += """</div>"""
         ret = '<span id="metadata_fields">' + ret + '</span>'
         return mark_safe(ret)
 
@@ -109,11 +116,11 @@ class JsonPairInputs(Widget):
         """
         jsontext = ""
         if data.has_key('json_key[%s]' % name) and data.has_key('json_value[%s]' % name):
-            keys     = data.getlist("json_key[%s]" % name)
-            values   = data.getlist("json_value[%s]" % name)
+            keys = data.getlist("json_key[%s]" % name)
+            values = data.getlist("json_value[%s]" % name)
             twotuple = []
             for key, value in zip(keys, values):
                 if len(key) > 0:
-                    twotuple += [(key,value)]
+                    twotuple += [(key, value)]
             jsontext = json.dumps(twotuple)
         return jsontext
