@@ -108,17 +108,17 @@
         {% for row in resource.metadata %}
         <tr>
           <th>
-            {% if row.0|length > 20 %}
+            {% if row.0|length > 40 %}
               <span data-toggle="tooltip" title="{{ row.0 }}">...</span>
             {% else %}
               {{ row.0 }}
             {% endif %}
           </th>
           <td>
-            {% if row.1|length > 20 %}
+            {% if row.1|length > 400 %}
               <span data-toggle="tooltip" title="{{ row.1 }}">...</span>
             {% else %}
-              {{ row.1 }}
+              {{ row.1|urlizetrunc:40 }}
             {% endif %}
           </td>
         </tr>
