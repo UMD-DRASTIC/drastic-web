@@ -1,0 +1,16 @@
+
+<div class="collection-entry row">
+
+    <div class="col-md-12">
+      <a href="{% url 'archive:delete_resource' path=resource.path %}">
+      <i class="blue-icon glyphicon glyphicon glyphicon-remove-circle"></i>
+      &nbsp;&nbsp;
+      </a>
+      &nbsp;
+      <a href="{% url 'archive:resource_view' path=parent_path %}/{{ name }}">
+          {{ name }}
+      </a>
+    </div>
+
+</div>
+<hr/>

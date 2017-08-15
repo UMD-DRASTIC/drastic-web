@@ -304,12 +304,21 @@ def view_collection(request, path):
     logging.error("Got {0} collections and {1} resources.".format(len(children_c), len(children_r)))
     # children_c.sort(key=lambda x: x.lower())
     # children_r.sort(key=lambda x: x.lower())
+    count = len(children_c)+len(children_r)
+    too_many = False
+    if count > 30:
+        too_many = True
+
     ctx = {
         'collection': collection.to_dict(request.user),
-        'children_c': [Collection.find(merge(path, c)).to_dict(request.user) for c in children_c],
-        'children_r': [Resource.find(merge(path, c)).simple_dict(request.user) for c in children_r],
+        'children_c': [] if too_many else
+                      [Collection.find(merge(path, c)).to_dict(request.user) for c in children_c],
+        'children_r': [] if too_many else
+                      [Resource.find(merge(path, c)).simple_dict(request.user) for c in children_r],
+        'children_cnames': children_c if too_many else [],
+        'children_rnames': children_r if too_many else [],
         'collection_paths': paths,
-        'empty': len(children_c) + len(children_r) == 0,
+        'empty': count == 0,
     }
     logging.error("Done building context for template.")
 

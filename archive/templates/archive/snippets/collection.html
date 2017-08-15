@@ -34,9 +34,16 @@
   {% include "archive/resource/resource_entry.html" with resource=r %}
 {% endfor %}
 
+{% for c in children_cnames %}
+  {% include "archive/snippets/collection_cnames_entry.html" with name=c parent_path=collection.path %}
+{% endfor %}
+
+{% for r in children_rnames %}
+  {% include "archive/snippets/collection_rnames_entry.html" with name=r parent_path=collection.path %}
+{% endfor %}
+
 {% if empty %}
   This collection is empty
 {% endif %}
 
 <hr/>
-
