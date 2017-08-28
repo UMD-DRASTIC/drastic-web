@@ -37,21 +37,22 @@ def home(request):
     activities = []
     for notif in notifications:
         t = template.Template(notif['tmpl'])
-        
+
+        obj_path = notif['object_path']
         obj_uuid = notif['object_uuid']
         object = None
         if notif['object_type'] == OBJ_RESOURCE:
-            object = Resource.find(obj_uuid)
+            object = Resource.find(obj_path)
             if object:
                 object_dict = object.to_dict()
             else:
-                object_dict = {'name': obj_uuid}
+                object_dict = {'name': obj_path}
         elif notif['object_type'] == OBJ_COLLECTION:
-            object = Collection.find(obj_uuid)
+            object = Collection.find(obj_path)
             if object:
                 object_dict = object.to_dict()
             else:
-                object_dict = {'name': obj_uuid}
+                object_dict = {'name': obj_path}
         elif notif['object_type'] == OBJ_USER:
             object = User.find(obj_uuid)
             if object:
@@ -82,16 +83,15 @@ def home(request):
             user = User.find(notif['username'])
             if user:
                 user_dict = user.to_dict()
-            
+
 
         variables = {
             'user': user_dict,
             'when': notif['when'],
             'object': object_dict
         }
-        
+
         ctx = template.Context(variables)
         activities.append({'html': t.render(ctx)})
-    
-    return render(request, 'activity/index.html', {'activities': activities})
 
+    return render(request, 'activity/index.html', {'activities': activities})
