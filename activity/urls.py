@@ -5,7 +5,8 @@ __license__ = "GNU AFFERO GENERAL PUBLIC LICENSE, Version 3"
 
 
 from django.conf.urls import url
+from activity.views import home
 
 urlpatterns = [
-    url(r'^$', 'activity.views.home', name='home'),
+    url(r'^$', home, name='home'),
 ]

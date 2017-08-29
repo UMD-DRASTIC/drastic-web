@@ -16,7 +16,7 @@ import json
 from django.forms import Widget
 from django.utils.encoding import force_unicode
 from django.utils.safestring import mark_safe
-from django.forms.widgets import flatatt
+from django.forms.utils import flatatt
 
 
 class JsonPairInputs(Widget):

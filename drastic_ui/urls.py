@@ -7,14 +7,16 @@ from django.views.generic import TemplateView
 
 from django.conf.urls.static import static
 
+from drastic_ui.views import home
+
 
 __copyright__ = "Copyright (C) 2016 University of Maryland"
 __license__ = "GNU AFFERO GENERAL PUBLIC LICENSE, Version 3"
 
 urlpatterns = [
-    url(r'^$', 'drastic_ui.views.home', name='home'),
+    url(r'^$', home, name='home'),
     url(r'^archive/', include('archive.urls', namespace="archive")),
-    url(r'^node/', include('nodes.urls', namespace="nodes")),
+    # url(r'^node/', include('nodes.urls', namespace="nodes")),
     url(r'^users/', include('users.urls', namespace="users")),
     url(r'^groups/', include('groups.urls', namespace="groups")),
     url(r'^activity/', include('activity.urls', namespace="activity")),
