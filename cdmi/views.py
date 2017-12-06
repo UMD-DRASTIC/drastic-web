@@ -854,12 +854,13 @@ class CDMIView(APIView):
         if not content_type:
             # This is mandatory - either application/cdmi-object or
             # mimetype of data object to create
-            return Response(status=HTTP_400_BAD_REQUEST)
+            return Response(status=HTTP_400_BAD_REQUEST, content='Missing Content-Type')
         if content_type == 'application/cdmi-container':
             # CDMI request performed to create a new container resource
             # but omitting the trailing slash at the end of the URI
             # CDMI standards mandates 400 Bad Request response
-            return Response(status=HTTP_400_BAD_REQUEST)
+            return Response(status=HTTP_400_BAD_REQUEST,
+                            content='Content type cannot be application/cdmi-container for object')
         # Sent as CDMI JSON
         body = self.request.body
         request_body = json.loads(body)
@@ -867,7 +868,7 @@ class CDMIView(APIView):
             body = self.request.body
             request_body = json.loads(body)
         except Exception as e:
-            return Response(status=HTTP_400_BAD_REQUEST)
+            return Response(status=HTTP_400_BAD_REQUEST, content='Cannot parse JSON')
 
         value_type = [key
                       for key in request_body
@@ -875,15 +876,16 @@ class CDMIView(APIView):
                       ]
         if not value_type and not resource:
             # We need a value to create a resource
-            return Response(status=HTTP_400_BAD_REQUEST)
+            return Response(status=HTTP_400_BAD_REQUEST,
+                            content='We need a value to create a resource')
         if len(value_type) > 1:
             # Only one of these fields shall be specified in any given
             # operation.
-            return Response(status=HTTP_400_BAD_REQUEST)
+            return Response(status=HTTP_400_BAD_REQUEST, content='Too many value_types')
         elif value_type and not (value_type[0] in ['value', 'reference']):
             # Only 'value' and 'reference' are supported at the present time
             # TODO: Check the authorized fields with reference
-            return Response(status=HTTP_400_BAD_REQUEST)
+            return Response(status=HTTP_400_BAD_REQUEST, content='Bad value type')
 
         is_reference = False    # By default
         # CDMI specification mandates that text/plain should be used
@@ -897,9 +899,9 @@ class CDMIView(APIView):
                     try:
                         content = base64.b64decode(content)
                     except TypeError:
-                        return Response(status=HTTP_400_BAD_REQUEST)
+                        return Response(status=HTTP_400_BAD_REQUEST, content='Cannot decode base64')
                 elif encoding != "utf-8":
-                    return Response(status=HTTP_400_BAD_REQUEST)
+                    return Response(status=HTTP_400_BAD_REQUEST, content='Unknown encoding')
                 metadata['cdmi_valuetransferencoding'] = encoding
                 if resource:
                     # Update value
