@@ -129,6 +129,7 @@ USE_L10N = True
 USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_ROOT = os.getenv('DJANGO_STATIC_ROOT', STATIC_ROOT)
 
 # Try and load a local, machine specific settings if it exists.
 try:
