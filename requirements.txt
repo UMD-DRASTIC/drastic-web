@@ -36,5 +36,5 @@ shortuuid==0.5.0
 singledispatch==3.4.0.3
 six==1.10.0
 tornado==4.4.1
-urllib3==1.22
+urllib3==1.26.5
 Werkzeug==0.12.2
